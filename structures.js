@@ -1,0 +1,33 @@
+// --- SUPPORT STRUCTURE LIBRARY (Core Logic) ---
+const structureLibrary = [
+    { 
+        id: '33_gantry', name: '33kV Gantry Structure', description: 'For substation entry/exit.', voltage: ['33 kV'],
+        materials: [ { index: 0, qty: 2 }, { index: 1, qty: 4 }, { index: 2, qty: 8 }, { index: 3, qty: 16 }, { index: 4, qty: 1 } ],
+        labour: [ { index: 0, qty: 8 }, { index: 1, qty: 16 }, { index: 2, qty: 4 }, { index: 3, qty: 8 }, { index: 4, qty: 2 }, { index: 5, qty: 1 }, { index: 6, qty: 1 } ]
+    },
+    { 
+        id: '33_dp', name: '33kV Double Pole Structure', description: 'Standard support for straight line sections.', voltage: ['33 kV'],
+        materials: [ { index: 0, qty: 2 }, { index: 1, qty: 6 }, { index: 2, qty: 12 }, { index: 4, qty: 1 } ],
+        labour: [ { index: 0, qty: 6 }, { index: 1, qty: 12 }, { index: 2, qty: 3 }, { index: 3, qty: 6 } ]
+    },
+    { 
+        id: '11_sp', name: '11kV Single Pole', description: 'Tangent location pole.', voltage: ['11 kV'],
+        materials: [ { index: 5, qty: 1 }, { index: 6, qty: 3 }, { index: 7, qty: 6 }, { index: 8, qty: 1 } ],
+        labour: [ { index: 7, qty: 4 }, { index: 8, qty: 8 }, { index: 9, qty: 2 }, { index: 10, qty: 4 } ]
+    },
+    { 
+        id: '11_dp_angle', name: '11kV DP Angle Structure', description: 'For line deviations up to 30 degrees.', voltage: ['11 kV'],
+        materials: [ { index: 5, qty: 2 }, { index: 6, qty: 6 }, { index: 7, qty: 12 }, { index: 8, qty: 2 }, { index: 9, qty: 4 } ],
+        labour: [ { index: 7, qty: 8 }, { index: 8, qty: 16 }, { index: 9, qty: 4 }, { index: 10, qty: 8 }, { index: 11, qty: 2 } ]
+    },
+    { 
+        id: 'dtr_plinth', name: 'DTR Plinth Mounting', description: 'Plinth for Distribution Transformer.', voltage: ['DTR'],
+        materials: [ { index: 10, qty: 1 }, { index: 11, qty: 4 }, { index: 12, qty: 1 }, { index: 13, qty: 8 } ],
+        labour: [ { index: 12, qty: 16 }, { index: 13, qty: 8 }, { index: 14, qty: 4 }, { index: 15, qty: 1 } ]
+    },
+    { 
+        id: 'lt_4w', name: 'LT 4-Wire Crossarm', description: 'For 3-phase 4-wire LT lines.', voltage: ['LT'],
+        materials: [ { index: 14, qty: 1 }, { index: 15, qty: 4 }, { index: 16, qty: 8 } ],
+        labour: [ { index: 16, qty: 2 }, { index: 17, qty: 4 }, { index: 18, qty: 4 } ]
+    },
+];

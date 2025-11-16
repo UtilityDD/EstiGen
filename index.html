@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electrical Network Estimator</title>
+    <style>
+        :root {
+            --primary-color: #005A9C;
+            --secondary-color: #003366;
+            --accent-color: #FDB813;
+            --light-gray: #f4f4f4;
+            --medium-gray: #e0e0e0;
+            --dark-gray: #333;
+            --white: #ffffff;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--light-gray);
+            margin: 0;
+            padding: 2rem;
+            color: var(--dark-gray);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.75rem;
+        }
+        .header a {
+            color: var(--white);
+            text-decoration: none;
+            font-weight: 600;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .header a:hover {
+            opacity: 1;
+        }
+
+        .step {
+            display: none;
+            padding: 2.5rem;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--secondary-color);
+            margin-top: 0;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .card-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--white);
+            border: 1px solid var(--medium-gray);
+            border-radius: 8px;
+            padding: 2rem 1rem;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 90, 156, 0.15);
+            border-color: var(--primary-color);
+        }
+
+        .card.selected {
+            background-color: var(--primary-color);
+            color: var(--white);
+            border-color: var(--primary-color);
+        }
+
+        .structure-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .structure-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: 8px;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .structure-info {
+            flex-grow: 1;
+        }
+
+        .structure-info h4 {
+            margin: 0 0 0.25rem 0;
+            font-size: 1.1rem;
+            color: var(--secondary-color);
+        }
+
+        .structure-info p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .quantity-input {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .quantity-input label {
+            font-weight: 600;
+        }
+
+        .quantity-input input {
+            width: 70px;
+            padding: 0.5rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: 4px;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .cost-item {
+            border: 1px solid var(--medium-gray);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            background: #fdfdfd;
+        }
+
+        .cost-item .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .radio-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .radio-group div {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .radio-group input[type="radio"] {
+            width: auto;
+            margin-right: 0.5rem;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-secondary {
+            background-color: var(--medium-gray);
+            color: var(--dark-gray);
+        }
+
+        .btn-secondary:hover {
+            background-color: #ccc;
+        }
+
+        #estimate-output {
+            padding: 2rem;
+        }
+
+        .estimate-header, .estimate-summary, .estimate-totals {
+            margin-bottom: 2rem;
+        }
+
+        .estimate-header h2 {
+            text-align: center;
+            color: var(--secondary-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .header-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            background: var(--light-gray);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .header-details p {
+            margin: 0.25rem 0;
+        }
+
+        .header-details strong {
+            color: var(--secondary-color);
+        }
+
+        .estimate-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .estimate-table th, .estimate-table td {
+            border: 1px solid var(--medium-gray);
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        .estimate-table th {
+            background-color: var(--light-gray);
+            font-weight: 600;
+        }
+
+        .estimate-table td:nth-child(3),
+        .estimate-table td:nth-child(4),
+        .estimate-table td:nth-child(5) {
+            text-align: right;
+        }
+
+        .totals-table {
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            border-collapse: collapse;
+        }
+
+        .totals-table td {
+            padding: 0.75rem;
+            border: 1px solid var(--medium-gray);
+        }
+
+        .totals-table td:first-child {
+            font-weight: 600;
+        }
+
+        .totals-table tr:last-child {
+            font-size: 1.2rem;
+            font-weight: bold;
+            background-color: var(--light-gray);
+        }
+
+        .totals-table td:last-child {
+            text-align: right;
+        }
+
+        .loader {
+            text-align: center;
+            padding: 3rem;
+        }
+
+        .loader p {
+            font-size: 1.2rem;
+            color: var(--secondary-color);
+        }
+
+        .spinner {
+            border: 4px solid var(--light-gray);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background-color: #ffeff0;
+            color: var(--error-color);
+            border: 1px solid var(--error-color);
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 1.5rem;
+        }
+
+        .export-buttons {
+            text-align: center;
+            padding: 1rem 2rem 2rem;
+            background: var(--light-gray);
+            border-top: 1px solid var(--medium-gray);
+        }
+
+        @media print {
+            body {
+                padding: 0;
+                background-color: var(--white);
+            }
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 100%;
+            }
+            .step, .header, .export-buttons, .button-group {
+                display: none !important;
+            }
+            #estimate-output {
+                display: block !important;
+                padding: 1rem;
+            }
+            .estimate-header-details {
+                background: transparent;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Electrical Network Construction Estimator</h1>
+        <a href="admin.html" target="_blank">Admin Panel</a>
+    </div>
+
+    <!-- Step 1: Work Category -->
+    <div id="step-1" class="step active">
+        <h2 class="step-title">Step 1: Select Work Category</h2>
+        <div class="card-container" id="work-category-cards">
+            <div class="card" data-value="New Network">New Network</div>
+            <div class="card" data-value="Repair & Maintenance">Repair & Maintenance</div>
+            <div class="card" data-value="Shifting of Network">Shifting of Network</div>
+        </div>
+    </div>
+
+    <!-- Step 2: Voltage / Asset Type -->
+    <div id="step-2" class="step">
+        <h2 class="step-title">Step 2: Select Voltage / Asset Type</h2>
+        <div class="card-container" id="voltage-cards">
+            <div class="card" data-value="33 kV">33 kV</div>
+            <div class="card" data-value="11 kV">11 kV</div>
+            <div class="card" data-value="DTR">DTR</div>
+            <div class="card" data-value="LT">LT</div>
+        </div>
+        <div class="button-group">
+            <button class="btn btn-secondary" onclick="goToStep(1)">Back</button>
+            <button class="btn btn-primary" onclick="goToStep(3)">Next</button>
+        </div>
+    </div>
+
+    <!-- Step 3: Structure Types -->
+    <div id="step-3" class="step">
+        <h2 class="step-title">Step 3: Enter Structure Quantities</h2>
+        <div id="structure-list" class="structure-list">
+            <!-- Structure items will be dynamically inserted here -->
+        </div>
+        <div class="button-group">
+            <button class="btn btn-secondary" onclick="goToStep(2)">Back</button>
+            <button class="btn btn-primary" onclick="goToStep(4)">Next</button>
+        </div>
+    </div>
+
+    <!-- Step 4: Work Name -->
+    <div id="step-4" class="step">
+        <h2 class="step-title">Step 4: Name Your Project</h2>
+        <div class="form-group">
+            <label for="work-name">Work Name / Description</label>
+            <input type="text" id="work-name" placeholder="e.g., 33 kV Line Extension at XYZ">
+        </div>
+        <div class="button-group">
+            <button class="btn btn-secondary" onclick="goToStep(3)">Back</button>
+            <button class="btn btn-primary" onclick="goToStep(4.5)">Next</button>
+        </div>
+    </div>
+
+    <!-- Step 4.5: Additional Costs -->
+    <div id="step-4.5" class="step">
+        <h2 class="step-title">Step 5: Add Additional Costs (Optional)</h2>
+        <div class="cost-item">
+            <div class="form-group">
+                <label for="gst-percent">GST (%)</label>
+                <input type="number" id="gst-percent" placeholder="e.g., 18" value="18">
+            </div>
+            <div class="radio-group">
+                <label>Calculate GST On:</label>
+                <div><input type="radio" id="gst-mat-lab" name="gst-on" value="mat-lab" checked><label for="gst-mat-lab">Material + Labour</label></div>
+                <div><input type="radio" id="gst-mat" name="gst-on" value="mat"><label for="gst-mat">Material Value</label></div>
+                <div><input type="radio" id="gst-lab" name="gst-on" value="lab"><label for="gst-lab">Labour Value</label></div>
+            </div>
+        </div>
+
+        <div class="cost-item">
+            <div class="form-group">
+                <label for="contingency-percent">Contingency (%)</label>
+                <input type="number" id="contingency-percent" placeholder="e.g., 3" value="3">
+            </div>
+             <div class="radio-group">
+                <label>Calculate Contingency On:</label>
+                <div><input type="radio" id="contingency-mat-lab" name="contingency-on" value="mat-lab" checked><label for="contingency-mat-lab">Material + Labour</label></div>
+                <div><input type="radio" id="contingency-mat" name="contingency-on" value="mat"><label for="contingency-mat">Material Value</label></div>
+                <div><input type="radio" id="contingency-lab" name="contingency-on" value="lab"><label for="contingency-lab">Labour Value</label></div>
+            </div>
+        </div>
+
+        <div class="cost-item">
+            <div class="form-group">
+                <label for="supervision-percent">Supervision Cost (%)</label>
+                <input type="number" id="supervision-percent" placeholder="e.g., 5" value="5">
+            </div>
+             <div class="radio-group">
+                <label>Calculate Supervision Cost On:</label>
+                <div><input type="radio" id="supervision-mat-lab" name="supervision-on" value="mat-lab" checked><label for="supervision-mat-lab">Material + Labour</label></div>
+                <div><input type="radio" id="supervision-mat" name="supervision-on" value="mat"><label for="supervision-mat">Material Value</label></div>
+                <div><input type="radio" id="supervision-lab" name="supervision-on" value="lab"><label for="supervision-lab">Labour Value</label></div>
+            </div>
+        </div>
+
+        <div class="cost-item">
+            <div class="form-group">
+                <label for="cess-percent">Cess (%)</label>
+                <input type="number" id="cess-percent" placeholder="e.g., 1" value="1">
+            </div>
+             <div class="radio-group">
+                <label>Calculate Cess On:</label>
+                <div><input type="radio" id="cess-mat-lab" name="cess-on" value="mat-lab" checked><label for="cess-mat-lab">Material + Labour</label></div>
+                <div><input type="radio" id="cess-mat" name="cess-on" value="mat"><label for="cess-mat">Material Value</label></div>
+                <div><input type="radio" id="cess-lab" name="cess-on" value="lab"><label for="cess-lab">Labour Value</label></div>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn btn-secondary" onclick="goToStep(4)">Back</button>
+            <button class="btn btn-primary" onclick="goToStep(5)">Generate Estimate</button>
+        </div>
+    </div>
+
+
+    <!-- Step 5: Generate Estimate -->
+    <div id="step-5" class="step">
+        <div id="loader" class="loader">
+            <div class="spinner"></div>
+            <p>Generating your estimate...</p>
+        </div>
+        <div id="estimate-output" style="display: none;">
+            <!-- Estimate will be rendered here -->
+        </div>
+        <div id="export-buttons" class="export-buttons" style="display: none;">
+             <button class="btn btn-secondary" onclick="goToStep(1)">Start New Estimate</button>
+             <button class="btn btn-primary" onclick="window.print()">Print / Save as PDF</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- DATA SOURCES ---
+    let structureLibrary = []; // Will be populated from the server
+    const materialsSheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmo_wgu_vIyfURXVhEBg07npBwo8Oh4W6ek3T82ss2p1zlJwORDiVvGbbU5U4ZoCq9r9jgcxcjzEQK/pub?gid=0&single=true&output=csv";
+    const labourSheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmo_wgu_vIyfURXVhEBg07npBwo8Oh4W6ek3T82ss2p1zlJwORDiVvGbbU5U4ZoCq9r9jgcxcjzEQK/pub?gid=1723646196&single=true&output=csv";
+
+    // --- APPLICATION STATE ---
+    const estimate = {
+        workCategory: '',
+        voltageLevels: [],
+        structures: {}, // { structureId: quantity }
+        workName: '',
+        estimateId: '',
+        gstPercent: 18,
+        contingencyPercent: 3,
+        gstOn: 'mat-lab',
+        contingencyOn: 'mat-lab',
+        supervisionPercent: 5,
+        cessPercent: 1,
+        supervisionOn: 'mat-lab',
+        cessOn: 'mat-lab'
+    };
+
+    // --- INITIALIZATION ---
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            // Fetch the structure library from the server API
+            const response = await fetch('/api/structures');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            structureLibrary = await response.json();
+            console.log("Structure library loaded successfully from server.");
+        } catch (error) {
+            console.error("Failed to load structure library:", error);
+            alert("Error: Could not load the core structure data from the server. The application may not function correctly.");
+        }
+    });
+
+    // --- UI NAVIGATION ---
+    let currentStep = 1;
+
+    function goToStep(stepNumber) {
+        if (stepNumber === 3) {
+            if (estimate.voltageLevels.length === 0) {
+                alert("Please select at least one voltage level.");
+                return;
+            }
+            renderStructureList();
+        }
+        if (stepNumber === 5) {
+            // Capture values from Step 4 and 4.5
+            estimate.workName = document.getElementById('work-name').value || 'Untitled Project';
+            estimate.gstPercent = parseFloat(document.getElementById('gst-percent').value) || 0;
+            estimate.gstOn = document.querySelector('input[name="gst-on"]:checked').value;
+            estimate.contingencyPercent = parseFloat(document.getElementById('contingency-percent').value) || 0;
+            estimate.contingencyOn = document.querySelector('input[name="contingency-on"]:checked').value;
+            estimate.supervisionPercent = parseFloat(document.getElementById('supervision-percent').value) || 0;
+            estimate.supervisionOn = document.querySelector('input[name="supervision-on"]:checked').value;
+            estimate.cessPercent = parseFloat(document.getElementById('cess-percent').value) || 0;
+            estimate.cessOn = document.querySelector('input[name="cess-on"]:checked').value;
+            generateEstimate();
+        }
+
+        document.getElementById(`step-${currentStep}`).classList.remove('active');
+        document.getElementById(`step-${stepNumber}`).classList.add('active');
+        currentStep = stepNumber;
+
+        if (stepNumber === 1) { // Reset if going back to start
+            resetEstimate();
+        }
+    }
+
+    function resetEstimate() {
+        estimate.workCategory = '';
+        estimate.voltageLevels = [];
+        estimate.structures = {};
+        estimate.workName = '';
+        estimate.estimateId = '';
+        estimate.gstPercent = 18;
+        estimate.contingencyPercent = 3;
+        estimate.gstOn = 'mat-lab';
+        estimate.contingencyOn = 'mat-lab';
+        estimate.supervisionPercent = 5;
+        estimate.cessPercent = 1;
+        estimate.supervisionOn = 'mat-lab';
+        estimate.cessOn = 'mat-lab';
+        
+        document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'));
+        document.getElementById('work-name').value = '';
+        document.getElementById('estimate-output').style.display = 'none';
+        document.getElementById('export-buttons').style.display = 'none';
+        document.getElementById('loader').style.display = 'block';
+    }
+
+    // --- STEP 1: WORK CATEGORY ---
+    document.getElementById('work-category-cards').addEventListener('click', (e) => {
+        if (e.target.classList.contains('card')) {
+            estimate.workCategory = e.target.dataset.value;
+            goToStep(2);
+        }
+    });
+
+    // --- STEP 2: VOLTAGE LEVELS ---
+    document.getElementById('voltage-cards').addEventListener('click', (e) => {
+        if (e.target.classList.contains('card')) {
+            const card = e.target;
+            const value = card.dataset.value;
+            card.classList.toggle('selected');
+            if (estimate.voltageLevels.includes(value)) {
+                estimate.voltageLevels = estimate.voltageLevels.filter(v => v !== value);
+            } else {
+                estimate.voltageLevels.push(value);
+            }
+        }
+    });
+
+    // --- STEP 3: STRUCTURES ---
+    function renderStructureList() {
+        const listContainer = document.getElementById('structure-list');
+        listContainer.innerHTML = '';
+        const relevantStructures = structureLibrary.filter(s => 
+            s.voltage.some(v => estimate.voltageLevels.includes(v))
+        );
+
+        if (relevantStructures.length === 0) {
+            listContainer.innerHTML = '<p>No structures available for the selected voltage levels.</p>';
+            return;
+        }
+
+        relevantStructures.forEach(structure => {
+            const quantity = estimate.structures[structure.id] || 0;
+            const itemHTML = `
+                <div class="structure-item" data-id="${structure.id}">
+                    <div class="structure-info">
+                        <h4>${structure.name}</h4>
+                        <p>${structure.description}</p>
+                    </div>
+                    <div class="quantity-input">
+                        <label for="qty-${structure.id}">Quantity:</label>
+                        <input type="number" id="qty-${structure.id}" min="0" value="${quantity}" onchange="updateStructureQuantity('${structure.id}', this.value)">
+                    </div>
+                </div>
+            `;
+            listContainer.insertAdjacentHTML('beforeend', itemHTML);
+        });
+    }
+
+    function updateStructureQuantity(structureId, quantity) {
+        const numQuantity = parseInt(quantity, 10);
+        if (numQuantity > 0) {
+            estimate.structures[structureId] = numQuantity;
+        } else {
+            delete estimate.structures[structureId];
+        }
+    }
+
+    // --- STEP 5: ESTIMATE GENERATION ---
+    async function generateEstimate() {
+        try {
+            // 1. Fetch data
+            const [materialMaster, labourMaster] = await Promise.all([
+                fetchCSV(materialsSheetURL),
+                fetchCSV(labourSheetURL)
+            ]);
+
+            // 2. Process BOQ
+            const consolidatedMaterials = {};
+            const consolidatedLabour = {};
+            const missingItems = [];
+
+            for (const structureId in estimate.structures) {
+                const quantity = estimate.structures[structureId];
+                const structure = structureLibrary.find(s => s.id === structureId);
+
+                // Process materials
+                structure.materials.forEach(item => {
+                    const masterItem = materialMaster[item.index];
+                    if (!masterItem) {
+                        missingItems.push(`Material at index ${item.index} for structure '${structure.name}' not found in master sheet.`);
+                        return;
+                    }
+                    const itemCode = masterItem['Materials Code'];
+                    if (!consolidatedMaterials[itemCode]) {
+                        consolidatedMaterials[itemCode] = {
+                            name: masterItem['Description'],
+                            unit: masterItem['Unit'],
+                            rate: parseFloat(masterItem['Rate(Rs)']),
+                            totalQty: 0
+                        };
+                    }
+                    consolidatedMaterials[itemCode].totalQty += item.qty * quantity;
+                });
+
+                // Process labour
+                structure.labour.forEach(item => {
+                    const masterItem = labourMaster[item.index];
+                     if (!masterItem) {
+                        missingItems.push(`Labour item at index ${item.index} for structure '${structure.name}' not found in master sheet.`);
+                        return;
+                    }
+                    const itemCode = masterItem['Labour Code'];
+                    if (!consolidatedLabour[itemCode]) {
+                        consolidatedLabour[itemCode] = {
+                            name: masterItem['Description'],
+                            unit: masterItem['Unit'],
+                            rate: parseFloat(masterItem['Rate (Rs)']),
+                            totalQty: 0
+                        };
+                    }
+                    consolidatedLabour[itemCode].totalQty += item.qty * quantity;
+                });
+            }
+
+            // 3. Render Output
+            renderOutput(consolidatedMaterials, consolidatedLabour, missingItems);
+
+        } catch (error) {
+            console.error("Failed to generate estimate:", error);
+            document.getElementById('estimate-output').innerHTML = `<div class="error-message"><strong>Error:</strong> Could not fetch data from the server. Please check your internet connection and try again.</div>`;
+        } finally {
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('estimate-output').style.display = 'block';
+            document.getElementById('export-buttons').style.display = 'block';
+        }
+    }
+
+    function renderOutput(materials, labour, missingItems) {
+        estimate.estimateId = `EST-${Date.now()}`;
+        const outputContainer = document.getElementById('estimate-output');
+
+        let totalMaterialCost = 0;
+        let totalLabourCost = 0;
+
+        const formatCurrency = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(num);
+
+        // Material Table
+        let materialRows = Object.values(materials).map(item => {
+            const amount = item.totalQty * item.rate;
+            totalMaterialCost += amount;
+            return `
+                <tr>
+                    <td>${item.name}</td>
+                    <td>${item.unit}</td>
+                    <td>${item.totalQty.toFixed(2)}</td>
+                    <td>${item.rate.toFixed(2)}</td>
+                    <td>${amount.toFixed(2)}</td>
+                </tr>
+            `;
+        }).join('');
+
+        // Labour Table
+        let labourRows = Object.values(labour).map(item => {
+            const amount = item.totalQty * item.rate;
+            totalLabourCost += amount;
+            return `
+                <tr>
+                    <td>${item.name}</td>
+                    <td>${item.unit}</td>
+                    <td>${item.totalQty.toFixed(2)}</td>
+                    <td>${item.rate.toFixed(2)}</td>
+                    <td>${amount.toFixed(2)}</td>
+                </tr>
+            `;
+        }).join('');
+
+        const subTotal = totalMaterialCost + totalLabourCost;
+
+        const getBase = (type) => {
+            if (type === 'mat') return totalMaterialCost;
+            if (type === 'lab') return totalLabourCost;
+            return subTotal; // 'mat-lab'
+        };
+
+        const getLabel = (type) => {
+            if (type === 'mat') return 'on Material';
+            if (type === 'lab') return 'on Labour';
+            return 'on Mat+Lab';
+        }
+
+        const gstBase = getBase(estimate.gstOn);
+        const gstAmount = gstBase * (estimate.gstPercent / 100);
+        const gstLabel = getLabel(estimate.gstOn);
+
+        const contingencyBase = getBase(estimate.contingencyOn);
+        const contingencyAmount = contingencyBase * (estimate.contingencyPercent / 100);
+        const contingencyLabel = getLabel(estimate.contingencyOn);
+
+        const supervisionBase = getBase(estimate.supervisionOn);
+        const supervisionAmount = supervisionBase * (estimate.supervisionPercent / 100);
+        const supervisionLabel = getLabel(estimate.supervisionOn);
+
+        const cessBase = getBase(estimate.cessOn);
+        const cessAmount = cessBase * (estimate.cessPercent / 100);
+        const cessLabel = getLabel(estimate.cessOn);
+
+        const grandTotal = subTotal + gstAmount + contingencyAmount + supervisionAmount + cessAmount;
+
+
+        const missingItemsHtml = missingItems.length > 0 
+            ? `<div class="error-message"><strong>Warning:</strong> The following items were not found in the master sheets and have been excluded:<ul>${missingItems.map(i => `<li>${i}</li>`).join('')}</ul></div>`
+            : '';
+
+        const outputHTML = `
+            ${missingItemsHtml}
+            <div class="estimate-header">
+                <h2>${estimate.workName}</h2>
+                <div class="header-details">
+                    <p><strong>Estimate ID:</strong> ${estimate.estimateId}</p>
+                    <p><strong>Work Category:</strong> ${estimate.workCategory}</p>
+                    <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                    <p><strong>Voltage Levels:</strong> ${estimate.voltageLevels.join(', ')}</p>
+                </div>
+            </div>
+
+            <div class="estimate-summary">
+                <h3>Material Summary</h3>
+                <table class="estimate-table">
+                    <thead>
+                        <tr>
+                            <th>Item Name</th>
+                            <th>Unit</th>
+                            <th style="text-align: right;">Total Qty</th>
+                            <th style="text-align: right;">Rate</th>
+                            <th style="text-align: right;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>${materialRows}</tbody>
+                </table>
+            </div>
+
+            <div class="estimate-summary">
+                <h3>Labour Summary</h3>
+                <table class="estimate-table">
+                    <thead>
+                        <tr>
+                            <th>Labour Activity</th>
+                            <th>Unit</th>
+                            <th style="text-align: right;">Total Qty</th>
+                            <th style="text-align: right;">Rate</th>
+                            <th style="text-align: right;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>${labourRows}</tbody>
+                </table>
+            </div>
+
+            <div class="estimate-totals">
+                <h3>Final Totals</h3>
+                <table class="totals-table">
+                    <tbody>
+                        <tr>
+                            <td>Total Material Cost</td>
+                            <td>${formatCurrency(totalMaterialCost)}</td>
+                        </tr>
+                        <tr>
+                            <td>Total Labour Cost</td>
+                            <td>${formatCurrency(totalLabourCost)}</td>
+                        </tr>
+                        <tr>
+                            <td>Sub-Total</td>
+                            <td>${formatCurrency(subTotal)}</td>
+                        </tr>
+                        <tr>
+                            <td>GST (${estimate.gstPercent}% ${gstLabel})</td>
+                            <td>${formatCurrency(gstAmount)}</td>
+                        </tr>
+                        <tr>
+                            <td>Contingency (${estimate.contingencyPercent}% ${contingencyLabel})</td>
+                            <td>${formatCurrency(contingencyAmount)}</td>
+                        </tr>
+                        <tr>
+                            <td>Supervision Cost (${estimate.supervisionPercent}% ${supervisionLabel})</td>
+                            <td>${formatCurrency(supervisionAmount)}</td>
+                        </tr>
+                        <tr>
+                            <td>Cess (${estimate.cessPercent}% ${cessLabel})</td>
+                            <td>${formatCurrency(cessAmount)}</td>
+                        </tr>
+                        <tr>
+                            <td>Grand Total</td>
+                            <td>${formatCurrency(grandTotal)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        outputContainer.innerHTML = outputHTML;
+    }
+
+    // --- UTILITIES ---
+    async function fetchCSV(url) {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Network response was not ok: ${response.statusText}`);
+            }
+            const csvText = await response.text();
+            return parseCSV(csvText);
+        } catch (error) {
+            console.error('Error fetching CSV:', error);
+            throw error; // Re-throw to be caught by the caller
+        }
+    }
+
+    function parseCSV(text) {
+        const lines = text.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(v => v.trim());
+            if (values.length === headers.length) {
+                const row = {};
+                for (let j = 0; j < headers.length; j++) {
+                    row[headers[j]] = values[j];
+                }
+                rows.push(row);
+            }
+        }
+        return rows;
+    }
+
+</script>
+
+</body>
+</html>
