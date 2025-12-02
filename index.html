@@ -277,6 +277,23 @@
             margin: 0;
         }
 
+        /* R/L Table styles */
+        .rl-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .rl-table th, .rl-table td {
+            border: 1px solid var(--medium-gray);
+            padding: 0.75rem;
+            text-align: left;
+        }
+        .rl-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        .rl-table input, .rl-table select { width: 100%; padding: 0.5rem; box-sizing: border-box; }
+        .rl-table td:first-child { font-weight: 600; width: 20%; }
+
         .button-group {
             display: flex;
             justify-content: space-between;
@@ -816,6 +833,7 @@
     const estimate = {
         workCategory: '',
         voltageLevels: [],
+        routeLengths: {}, // { voltage: { length: km, conductor: 'size' } }
         structures: {}, // { structureId: quantity }
         workName: '',
         preparedBy: '',
@@ -976,6 +994,7 @@
     function resetEstimate() {
         estimate.workCategory = '';
         estimate.voltageLevels = [];
+        estimate.routeLengths = {};
         estimate.structures = {};
         estimate.workName = '';
         estimate.preparedBy = '';
@@ -1041,6 +1060,61 @@
         const tabContent = document.createElement('div');
         tabContent.className = 'tab-content';
 
+        // --- Create R/L (Route Length) Tab ---
+        const applicableRLVoltages = ['33 kV', '11 kV', 'LT'];
+        const rlVoltagesToShow = estimate.voltageLevels.filter(v => applicableRLVoltages.includes(v));
+
+        if (rlVoltagesToShow.length > 0) {
+            const rlButton = document.createElement('button');
+            rlButton.className = 'tab-button active'; // Make R/L active by default and stay active
+            rlButton.textContent = 'R/L';
+            rlButton.dataset.voltage = 'RL';
+            tabButtons.appendChild(rlButton);
+
+            const rlPane = document.createElement('div');
+            rlPane.className = 'tab-pane';
+            rlPane.style.display = 'block'; // Show its content
+            rlPane.dataset.voltage = 'RL';
+
+            // Conductor options - can be expanded
+            const conductorOptions = [
+                'Rabbit', 'Weasel', 'Dog', 'Panther', 'Zebra', // ACSR
+                '3x95+1x50+1x16', '3x150+1x70+1x16', '3x240+1x95+1x16', // LT AB Cable
+                '1x11', '1x16', '1x25', '1x35', '1x50', '1x70', '1x95', '1x120', '1x150', '1x185', '1x240', '1x300', '1x400' // XLPE / PVC Cables
+            ];
+            const conductorSelectOptions = conductorOptions.map(c => `<option value="${c}">${c}</option>`).join('');
+
+            let rlTableRows = '';
+            rlVoltagesToShow.forEach(voltage => {
+                const rlData = estimate.routeLengths[voltage] || { length: 0, conductor: '' };
+                rlTableRows += `
+                <tr>
+                    <td>${voltage}</td>
+                    <td><input type="number" id="rl-length-${voltage}" min="0" step="0.01" value="${rlData.length}" onchange="updateRouteLength('${voltage}', this.value)"></td>
+                    <td>
+                        <select id="rl-conductor-${voltage}" onchange="updateConductor('${voltage}', this.value)">
+                            <option value="">-- Select Size --</option>
+                            ${conductorSelectOptions}
+                        </select>
+                    </td>
+                </tr>`;
+            });
+
+            rlPane.innerHTML = `
+                <table class="rl-table">
+                    <thead>
+                        <tr>
+                            <th>Voltage Level</th>
+                            <th>Route Length (km)</th>
+                            <th>Conductor / Cable Size</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rlTableRows}</tbody>
+                </table>`;
+
+            tabContent.appendChild(rlPane);
+        }
+
         tabsContainer.appendChild(tabButtons);
         tabsContainer.appendChild(tabContent);
 
@@ -1050,7 +1124,8 @@
             groupedStructures[voltage] = relevantStructures.filter(s => s.voltage.includes(voltage));
         });
 
-        let isFirstTab = true;
+        // If R/L tab exists, it's already active. If not, make the first voltage tab active.
+        let isFirstTab = rlVoltagesToShow.length === 0; // Correctly initialize isFirstTab
         for (const voltage in groupedStructures) {
             const structures = groupedStructures[voltage];
             if (structures.length === 0) continue;
@@ -1094,6 +1169,13 @@
             }
         }
 
+        // After rendering, set the selected conductor values
+        estimate.voltageLevels.forEach(voltage => {
+            const rlData = estimate.routeLengths[voltage];
+            if (rlData && rlData.conductor) {
+                document.getElementById(`rl-conductor-${voltage}`).value = rlData.conductor;
+            }
+        });
         // Add event listener for tab clicks
         tabButtons.addEventListener('click', (e) => {
             if (e.target.matches('.tab-button')) {
@@ -1109,6 +1191,19 @@
             }
         });
     }
+
+    function updateRouteLength(voltage, length) {
+        if (!estimate.routeLengths[voltage]) estimate.routeLengths[voltage] = {};
+        estimate.routeLengths[voltage].length = parseFloat(length) || 0;
+        console.log('Updated Route Lengths:', estimate.routeLengths);
+    }
+
+    function updateConductor(voltage, conductor) {
+        if (!estimate.routeLengths[voltage]) estimate.routeLengths[voltage] = {};
+        estimate.routeLengths[voltage].conductor = conductor;
+        console.log('Updated Conductors:', estimate.routeLengths);
+    }
+
 
     function updateStructureQuantity(structureId, quantity) {
         const numQuantity = parseInt(quantity, 10);
