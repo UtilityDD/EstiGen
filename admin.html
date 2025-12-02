@@ -61,8 +61,8 @@
 </div>
 
 <script>
-    const API_URL_GET = '/api/structures';
-    const API_URL_UPDATE = '/api/structures/update';
+    const API_URL_GET = '/api/structures'; // Read structures from CSV via API
+    const API_URL_UPDATE = '/api/structures/update'; // Update endpoint (saves to CSV)
     let structureData = [];
 
     document.addEventListener('DOMContentLoaded', loadStructures);
@@ -71,10 +71,59 @@
         showLoader(true);
         try {
             const response = await fetch(API_URL_GET);
-            if (!response.ok) throw new Error('Failed to fetch data from the server.');
-            
-            structureData = await response.json();
+            if (!response.ok) throw new Error('Failed to fetch structures from the server.');
+            const rawStructures = await response.json();
+
+            // Convert API data to the JSON structure used by the editor
+            structureData = rawStructures.map(s => {
+                // Parse materials - semicolon separated "1:1;3:1;5:3"
+                let materials = [];
+                if (typeof s.materials === 'string' && s.materials) {
+                    materials = s.materials.split(';')
+                        .map(pair => {
+                            const parts = pair.split(':');
+                            if (parts.length < 2) return null;
+                            return { index: parseInt(parts[0].trim(), 10), qty: parseFloat(parts[1].trim()) };
+                        })
+                        .filter(item => item && !isNaN(item.index) && !isNaN(item.qty));
+                } else if (Array.isArray(s.materials)) {
+                    materials = s.materials;
+                }
+
+                // Parse labour - semicolon separated
+                let labour = [];
+                if (typeof s.labour === 'string' && s.labour) {
+                    labour = s.labour.split(';')
+                        .map(pair => {
+                            const parts = pair.split(':');
+                            if (parts.length < 2) return null;
+                            return { index: parseInt(parts[0].trim(), 10), qty: parseFloat(parts[1].trim()) };
+                        })
+                        .filter(item => item && !isNaN(item.index) && !isNaN(item.qty));
+                } else if (Array.isArray(s.labour)) {
+                    labour = s.labour;
+                }
+
+                // Parse voltage - pipe separated "33 kV|11 kV"
+                let voltage = [];
+                if (typeof s.voltage === 'string') {
+                    voltage = s.voltage.split('|').map(v => v.trim()).filter(v => v);
+                } else if (Array.isArray(s.voltage)) {
+                    voltage = s.voltage;
+                }
+
+                return {
+                    id: s.id,
+                    name: s.name,
+                    description: s.description,
+                    voltage: voltage,
+                    materials: materials,
+                    labour: labour
+                };
+            });
+
             renderEditor();
+
         } catch (error) {
             showNotification(error.message, 'error');
             console.error(error);
@@ -110,7 +159,7 @@
                     </div>
                     <div class="form-group">
                         <label>Voltage (comma-separated)</label>
-                        <input type="text" data-field="voltage" value="${(structure.voltage || []).join(', ')}">
+                        <input type="text" data-field="voltage" value="${Array.isArray(structure.voltage) ? structure.voltage.join(', ') : (structure.voltage || '')}">
                     </div>
                     <div class="form-group">
                         <label>Materials (JSON format)</label>
@@ -157,7 +206,19 @@
             const response = await fetch(API_URL_UPDATE, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(structureData)
+                // Convert the UI data back to the CSV format before sending
+                body: JSON.stringify(structureData.map(s => {
+                    const materialsStr = s.materials.map(m => `${m.index}:${m.qty}`).join(';');
+                    const labourStr = s.labour.map(l => `${l.index}:${l.qty}`).join(';');
+                    return {
+                        id: s.id,
+                        name: s.name,
+                        description: s.description,
+                        voltage: Array.isArray(s.voltage) ? s.voltage.join('|') : '',
+                        materials: materialsStr,
+                        labour: labourStr
+                    };
+                }))
             });
 
             const result = await response.json();
@@ -193,7 +254,7 @@
             
             // --- Voltage array ---
             const voltageString = card.querySelector('[data-field="voltage"]').value;
-            structure.voltage = voltageString.split(',').map(v => v.trim()).filter(Boolean);
+            structure.voltage = typeof voltageString === 'string' ? voltageString.split(',').map(v => v.trim()).filter(Boolean) : [];
 
             // --- JSON Textareas (Materials & Labour) ---
             try {
@@ -218,6 +279,24 @@
             return true;
         }
         return false;
+    }
+
+    // --- CSV Parser Utility ---
+    function parseCSV(text) {
+        const lines = text.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(v => v.trim());
+            if (values.length === headers.length) {
+                const row = {};
+                for (let j = 0; j < headers.length; j++) {
+                    row[headers[j]] = values[j];
+                }
+                rows.push(row);
+            }
+        }
+        return rows;
     }
 
     // --- UI Helpers ---

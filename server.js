@@ -3,54 +3,117 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-// Use the port provided by the hosting environment (like Render), or default to 3000 for local development.
 const PORT = process.env.PORT || 3000;
 
-// In production, data might be on a persistent disk. This uses that path if available.
-const DATA_DIR = process.env.DATA_DIR || __dirname;
-const STRUCTURES_FILE_PATH = path.join(DATA_DIR, 'structures.json');
-
 // Middleware to parse JSON bodies and serve static files
-app.use(express.json()); // Important: This allows us to read JSON from the request body
-app.use(express.static(__dirname)); // Serve files like index.html, admin.html, etc.
+app.use(express.json());
+app.use(express.static(__dirname));
 
-// API endpoint to GET the current structure data
-app.get('/api/structures', (req, res) => {
-    fs.readFile(STRUCTURES_FILE_PATH, 'utf8', (err, data) => {
-        // If the file doesn't exist (e.g., on first deploy), return an empty array instead of an error.
-        if (err && err.code === 'ENOENT') {
-            console.log("structures.json not found, returning empty array.");
-            return res.json([]);
-        }
+// --- File Paths ---
+const STRUCTURE_FILE = path.join(__dirname, 'data', 'structure.csv');
 
-        if (err) {
-            console.error("Error reading structures.json:", err);
-            return res.status(500).send('Error reading structure data.');
+// --- CSV Parser Utility ---
+function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    const headers = lines[0].split(',').map(h => h.trim());
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+        // Handle quoted values with commas inside
+        const values = parseCSVLine(lines[i]);
+        if (values.length === headers.length) {
+            const row = {};
+            for (let j = 0; j < headers.length; j++) {
+                row[headers[j]] = values[j];
+            }
+            rows.push(row);
         }
-        res.json(JSON.parse(data));
+    }
+    return rows;
+}
+
+function parseCSVLine(line) {
+    const values = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+            inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+            values.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    values.push(current.trim());
+    return values;
+}
+
+// --- CSV Generator Utility ---
+function generateCSV(structures) {
+    const headers = ['id', 'name', 'description', 'voltage', 'materials', 'labour'];
+    const lines = [headers.join(',')];
+    
+    structures.forEach(s => {
+        const row = [
+            s.id,
+            `"${s.name}"`,
+            `"${s.description}"`,
+            `"${s.voltage}"`,
+            `"${s.materials}"`,
+            `"${s.labour}"`
+        ];
+        lines.push(row.join(','));
     });
+    
+    return lines.join('\n');
+}
+
+// API endpoint to GET the current structure data (as JSON)
+app.get('/api/structures', (req, res) => {
+    try {
+        const csvText = fs.readFileSync(STRUCTURE_FILE, 'utf-8');
+        const structures = parseCSV(csvText);
+        
+        // Convert to the format expected by the app
+        const formattedStructures = structures.map(s => ({
+            id: s.id,
+            name: s.name,
+            description: s.description,
+            voltage: s.voltage,
+            materials: s.materials,
+            labour: s.labour
+        }));
+        
+        res.json(formattedStructures);
+    } catch (error) {
+        console.error("Error reading structure file:", error.message);
+        res.status(500).json({ message: 'Error reading structure data.', details: error.message });
+    }
 });
 
 // API endpoint to POST (update) the structure data
 app.post('/api/structures/update', (req, res) => {
     const updatedStructures = req.body;
 
-    // Basic validation: ensure we're receiving an array
     if (!Array.isArray(updatedStructures)) {
         return res.status(400).send('Invalid data format. Expected an array of structures.');
     }
 
-    // Write the updated data back to the file. Using JSON.stringify with indentation makes the file readable.
-    fs.writeFile(STRUCTURES_FILE_PATH, JSON.stringify(updatedStructures, null, 4), 'utf8', (err) => {
-        if (err) {
-            console.error("Error writing to structures.json:", err);
-            return res.status(500).send('Error saving structure data.');
-        }
+    try {
+        const csvContent = generateCSV(updatedStructures);
+        fs.writeFileSync(STRUCTURE_FILE, csvContent, 'utf-8');
         res.status(200).json({ message: 'Structures updated successfully!' });
-    });
+    } catch (error) {
+        console.error("Error writing structure file:", error.message);
+        res.status(500).json({ message: 'An error occurred while saving data.', details: error.message });
+    }
 });
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
-    console.log('Open your browser and navigate to http://localhost:3000/admin.html to manage structures.');
+    console.log('Open your browser and navigate to http://localhost:3000 to use the estimator.');
+    console.log('Navigate to http://localhost:3000/admin.html to manage structures.');
 });

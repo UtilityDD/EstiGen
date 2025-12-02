@@ -260,21 +260,24 @@
         }
 
         .estimate-header h2 {
-            text-align: center;
+            text-align: left;
             color: var(--secondary-color);
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 1.75rem;
         }
 
         .header-details {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1rem;
-            background: var(--light-gray);
-            padding: 1rem;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 1rem 1.25rem;
             border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
         }
 
         .header-details p {
+            font-size: 0.9rem;
             margin: 0.25rem 0;
         }
 
@@ -282,10 +285,23 @@
             color: var(--secondary-color);
         }
 
+        /* Print Header - appears on each page */
+        .print-header {
+            display: none;
+        }
+
+        .estimate-summary h3, .estimate-totals h3 {
+            color: var(--secondary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
         .estimate-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 1rem;
+            margin-top: 0.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .estimate-table th, .estimate-table td {
@@ -295,7 +311,22 @@
         }
 
         .estimate-table th {
-            background-color: var(--light-gray);
+            background-color: #f8f9fa;
+            color: var(--secondary-color);
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .estimate-table tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .estimate-table tbody tr:hover {
+            background-color: #e3f2fd;
+        }
+
+        .estimate-table tfoot td {
+            background-color: #f8f9fa;
             font-weight: 600;
         }
 
@@ -307,28 +338,36 @@
 
         .totals-table {
             width: 100%;
-            max-width: 400px;
+            max-width: 500px;
             margin-left: auto;
             border-collapse: collapse;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .totals-table td {
-            padding: 0.75rem;
+            padding: 0.85rem 1rem;
             border: 1px solid var(--medium-gray);
+        }
+
+        .totals-table tr:nth-child(odd) {
+            background-color: #f8f9fa;
         }
 
         .totals-table td:first-child {
             font-weight: 600;
+            color: var(--secondary-color);
         }
 
         .totals-table tr:last-child {
             font-size: 1.2rem;
             font-weight: bold;
-            background-color: var(--light-gray);
+            background-color: var(--secondary-color);
+            color: white;
         }
 
         .totals-table td:last-child {
             text-align: right;
+            font-family: 'Courier New', monospace;
         }
 
         .loader {
@@ -373,24 +412,191 @@
         }
 
         @media print {
+            @page {
+                size: A4;
+                margin: 15mm 10mm 20mm 10mm;
+            }
+            
             body {
                 padding: 0;
                 background-color: var(--white);
+                font-size: 10pt;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
+            
             .container {
                 box-shadow: none;
                 border-radius: 0;
                 max-width: 100%;
             }
-            .step, .header, .export-buttons, .button-group {
+            
+            .header, .export-buttons, .button-group, #loader, .error-message {
                 display: none !important;
             }
+            
+            .step {
+                display: none !important;
+            }
+            
+            #step-5 {
+                display: block !important;
+            }
+            
             #estimate-output {
                 display: block !important;
-                padding: 1rem;
+                padding: 0;
             }
-            .estimate-header-details {
-                background: transparent;
+
+            /* Print header that appears on each page */
+            .print-header {
+                display: block !important;
+                background: linear-gradient(135deg, #005A9C 0%, #003366 100%) !important;
+                color: white !important;
+                padding: 12px 15px;
+                margin-bottom: 15px;
+                border-radius: 4px;
+            }
+            
+            .print-header-content {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+            
+            .print-header h3 {
+                margin: 0;
+                font-size: 14pt;
+                font-weight: 600;
+            }
+            
+            .print-header-info {
+                display: flex;
+                gap: 20px;
+                font-size: 9pt;
+            }
+            
+            .print-header-info span {
+                white-space: nowrap;
+            }
+
+            /* Hide the screen header on print */
+            .estimate-header {
+                display: none !important;
+            }
+            
+            .header-details {
+                background: #f0f0f0 !important;
+                border-left: 3px solid #005A9C !important;
+                padding: 8px 12px;
+            }
+
+            /* Section styling */
+            .estimate-summary, .estimate-totals {
+                margin-bottom: 0;
+            }
+            
+            .estimate-summary h3, .estimate-totals h3 {
+                color: #003366 !important;
+                font-size: 12pt;
+                border-bottom: 2px solid #005A9C;
+                padding-bottom: 5px;
+                margin-top: 0;
+                margin-bottom: 10px;
+            }
+
+            /* Table styling for print */
+            .estimate-table {
+                font-size: 9pt;
+                box-shadow: none;
+                border: 1px solid #ccc;
+            }
+            
+            .estimate-table th {
+                background: #005A9C !important;
+                color: white !important;
+                padding: 8px 6px;
+                font-size: 8pt;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .estimate-table td {
+                padding: 6px;
+                border-color: #ddd;
+            }
+            
+            .estimate-table tbody tr:nth-child(even) {
+                background-color: #f5f5f5 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            /* Add serial number column styling */
+            .estimate-table th:first-child,
+            .estimate-table td:first-child {
+                width: auto;
+            }
+
+            /* Totals table styling */
+            .totals-table {
+                max-width: 350px;
+                font-size: 9pt;
+                box-shadow: none;
+            }
+            
+            .totals-table td {
+                padding: 6px 10px;
+            }
+            
+            .totals-table tr:nth-child(odd) {
+                background-color: #f5f5f5 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .totals-table tr:last-child {
+                background: #005A9C !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .totals-table tr:last-child td {
+                color: white !important;
+            }
+
+            /* Page breaks for different sections */
+            .estimate-summary {
+                page-break-before: always;
+                padding-top: 10px;
+            }
+            
+            .estimate-summary:first-of-type {
+                page-break-before: avoid;
+            }
+            
+            .estimate-totals {
+                page-break-before: always;
+                padding-top: 10px;
+            }
+            
+            /* Prevent breaking inside tables */
+            .estimate-table {
+                page-break-inside: auto;
+            }
+            
+            .estimate-table thead {
+                display: table-header-group;
+            }
+            
+            .estimate-table tr {
+                page-break-inside: avoid;
+            }
+            
+            .totals-table {
+                page-break-inside: avoid;
             }
         }
 
@@ -535,8 +741,9 @@
 <script>
     // --- DATA SOURCES ---
     let structureLibrary = []; // Will be populated from the server
-    const materialsSheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmo_wgu_vIyfURXVhEBg07npBwo8Oh4W6ek3T82ss2p1zlJwORDiVvGbbU5U4ZoCq9r9jgcxcjzEQK/pub?gid=0&single=true&output=csv";
-    const labourSheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmo_wgu_vIyfURXVhEBg07npBwo8Oh4W6ek3T82ss2p1zlJwORDiVvGbbU5U4ZoCq9r9jgcxcjzEQK/pub?gid=1723646196&single=true&output=csv";
+    const materialsSheetURL = "/data/mat.csv"; // Path to local CSV
+    const labourSheetURL = "/data/lab.csv";     // Path to local CSV
+    const structuresURL = "/data/structure.csv";  // Path to local CSV
 
     // --- APPLICATION STATE ---
     const estimate = {
@@ -558,15 +765,61 @@
     // --- INITIALIZATION ---
     document.addEventListener('DOMContentLoaded', async () => {
         try {
-            // Fetch the structure library from the server API
-            const response = await fetch('/api/structures');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            structureLibrary = await response.json();
-            console.log("Structure library loaded successfully from server.");
+            const rawStructures = await fetchCSV(structuresURL);
+            console.log("Raw structures loaded:", rawStructures.length);
+            console.log("First raw structure:", rawStructures[0]);
+
+            // Process raw structures into the format the app expects
+            structureLibrary = rawStructures.map(s => {
+                // Safely get values with fallbacks
+                const materialsStr = s.materials || '';
+                const labourStr = s.labour || '';
+                const voltageStr = s.voltage || '';
+
+                // Parse materials string "1:1;3:1;5:3" (semicolon separated)
+                const materials = materialsStr.split(';')
+                    .map(pair => {
+                        const parts = pair.split(':');
+                        if (parts.length < 2) return null;
+                        return {
+                            index: parseInt(parts[0].trim(), 10),
+                            qty: parseFloat(parts[1].trim())
+                        };
+                    })
+                    .filter(item => item && !isNaN(item.index) && !isNaN(item.qty));
+
+                // Parse labour string (semicolon separated)
+                const labour = labourStr.split(';')
+                    .map(pair => {
+                        const parts = pair.split(':');
+                        if (parts.length < 2) return null;
+                        return {
+                            index: parseInt(parts[0].trim(), 10),
+                            qty: parseFloat(parts[1].trim())
+                        };
+                    })
+                    .filter(item => item && !isNaN(item.index) && !isNaN(item.qty));
+
+                // Parse voltage (pipe separated for multiple values)
+                const voltage = voltageStr.split('|').map(v => v.trim()).filter(v => v);
+
+                return {
+                    id: s.id || '',
+                    name: s.name || '',
+                    description: s.description || '',
+                    voltage: voltage,
+                    materials: materials,
+                    labour: labour
+                };
+            });
+
+            // Sort the library by name
+            structureLibrary.sort((a, b) => a.name.localeCompare(b.name));
+            console.log("Structure library loaded successfully:", structureLibrary.length, "structures");
+            console.log("Sample structure voltages:", structureLibrary.slice(0, 3).map(s => ({ name: s.name, voltage: s.voltage })));
+
         } catch (error) {
-            console.error("Failed to load structure library:", error);
+            console.error("Failed to load structure library:", error.message);
             alert("Error: Could not load the core structure data from the server. The application may not function correctly.");
         }
     });
@@ -653,9 +906,15 @@
     function renderStructureList() {
         const listContainer = document.getElementById('structure-list');
         listContainer.innerHTML = '';
+        
+        console.log("Selected voltage levels:", estimate.voltageLevels);
+        console.log("Structure library size:", structureLibrary.length);
+        
         const relevantStructures = structureLibrary.filter(s => 
             s.voltage.some(v => estimate.voltageLevels.includes(v))
         );
+        
+        console.log("Matching structures:", relevantStructures.length);
 
         if (relevantStructures.length === 0) {
             listContainer.innerHTML = '<p>No structures available for the selected voltage levels.</p>';
@@ -709,12 +968,12 @@
 
                 // Process materials
                 structure.materials.forEach(item => {
-                    const masterItem = materialMaster[item.index];
+                    const masterItem = materialMaster.find(m => parseInt(m.mat_sl, 10) === item.index);
                     if (!masterItem) {
                         missingItems.push(`Material at index ${item.index} for structure '${structure.name}' not found in master sheet.`);
                         return;
                     }
-                    const itemCode = masterItem['Materials Code'];
+                    const itemCode = masterItem['mat_sl']; // Use mat_sl as the unique key
                     if (!consolidatedMaterials[itemCode]) {
                         consolidatedMaterials[itemCode] = {
                             name: masterItem['Description'],
@@ -728,12 +987,12 @@
 
                 // Process labour
                 structure.labour.forEach(item => {
-                    const masterItem = labourMaster[item.index];
+                    const masterItem = labourMaster.find(l => parseInt(l.lab_sl, 10) === item.index);
                      if (!masterItem) {
                         missingItems.push(`Labour item at index ${item.index} for structure '${structure.name}' not found in master sheet.`);
                         return;
                     }
-                    const itemCode = masterItem['Labour Code'];
+                    const itemCode = masterItem['lab_sl']; // Use lab_sl as the unique key
                     if (!consolidatedLabour[itemCode]) {
                         consolidatedLabour[itemCode] = {
                             name: masterItem['Description'],
@@ -767,36 +1026,71 @@
         let totalLabourCost = 0;
 
         const formatCurrency = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(num);
+        const currentDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
-        // Material Table
+        // Print header template for each page
+        const printHeader = `
+            <div class="print-header">
+                <div class="print-header-content">
+                    <h3>${estimate.workName}</h3>
+                    <div class="print-header-info">
+                        <span><strong>ID:</strong> ${estimate.estimateId}</span>
+                        <span><strong>Date:</strong> ${currentDate}</span>
+                        <span><strong>Category:</strong> ${estimate.workCategory}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Material Table with serial numbers
+        let slNo = 1;
         let materialRows = Object.values(materials).map(item => {
             const amount = item.totalQty * item.rate;
             totalMaterialCost += amount;
             return `
                 <tr>
+                    <td style="text-align: center;">${slNo++}</td>
                     <td>${item.name}</td>
-                    <td>${item.unit}</td>
-                    <td>${item.totalQty.toFixed(2)}</td>
-                    <td>${item.rate.toFixed(2)}</td>
-                    <td>${amount.toFixed(2)}</td>
+                    <td style="text-align: center;">${item.unit}</td>
+                    <td style="text-align: right;">${item.totalQty.toFixed(2)}</td>
+                    <td style="text-align: right;">${item.rate.toFixed(2)}</td>
+                    <td style="text-align: right;">${amount.toFixed(2)}</td>
                 </tr>
             `;
         }).join('');
 
-        // Labour Table
+        // Add total row to materials
+        materialRows += `
+            <tfoot>
+                <td colspan="5" style="text-align: right;">Total Material Cost</td>
+                <td style="text-align: right;">${formatCurrency(totalMaterialCost)}</td>
+            </tfoot>
+        `;
+
+        // Labour Table with serial numbers
+        slNo = 1;
         let labourRows = Object.values(labour).map(item => {
             const amount = item.totalQty * item.rate;
             totalLabourCost += amount;
             return `
                 <tr>
+                    <td style="text-align: center;">${slNo++}</td>
                     <td>${item.name}</td>
-                    <td>${item.unit}</td>
-                    <td>${item.totalQty.toFixed(2)}</td>
-                    <td>${item.rate.toFixed(2)}</td>
-                    <td>${amount.toFixed(2)}</td>
+                    <td style="text-align: center;">${item.unit}</td>
+                    <td style="text-align: right;">${item.totalQty.toFixed(2)}</td>
+                    <td style="text-align: right;">${item.rate.toFixed(2)}</td>
+                    <td style="text-align: right;">${amount.toFixed(2)}</td>
                 </tr>
             `;
         }).join('');
+
+        // Add total row to labour
+        labourRows += `
+            <tfoot>
+                <td colspan="5" style="text-align: right;">Total Labour Cost</td>
+                <td style="text-align: right;">${formatCurrency(totalLabourCost)}</td>
+            </tfoot>
+        `;
 
         const subTotal = totalMaterialCost + totalLabourCost;
 
@@ -842,21 +1136,23 @@
                 <div class="header-details">
                     <p><strong>Estimate ID:</strong> ${estimate.estimateId}</p>
                     <p><strong>Work Category:</strong> ${estimate.workCategory}</p>
-                    <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                    <p><strong>Date:</strong> ${currentDate}</p>
                     <p><strong>Voltage Levels:</strong> ${estimate.voltageLevels.join(', ')}</p>
                 </div>
             </div>
 
             <div class="estimate-summary">
-                <h3>Material Summary</h3>
+                ${printHeader}
+                <h3>📦 Material Schedule</h3>
                 <table class="estimate-table">
                     <thead>
                         <tr>
-                            <th>Item Name</th>
-                            <th>Unit</th>
-                            <th style="text-align: right;">Total Qty</th>
-                            <th style="text-align: right;">Rate</th>
-                            <th style="text-align: right;">Amount</th>
+                            <th style="text-align: center; width: 50px;">Sl.No</th>
+                            <th>Item Description</th>
+                            <th style="text-align: center; width: 70px;">Unit</th>
+                            <th style="text-align: right; width: 100px;">Quantity</th>
+                            <th style="text-align: right; width: 100px;">Rate (₹)</th>
+                            <th style="text-align: right; width: 120px;">Amount (₹)</th>
                         </tr>
                     </thead>
                     <tbody>${materialRows}</tbody>
@@ -864,15 +1160,17 @@
             </div>
 
             <div class="estimate-summary">
-                <h3>Labour Summary</h3>
+                ${printHeader}
+                <h3>👷 Labour Schedule</h3>
                 <table class="estimate-table">
                     <thead>
                         <tr>
+                            <th style="text-align: center; width: 50px;">Sl.No</th>
                             <th>Labour Activity</th>
-                            <th>Unit</th>
-                            <th style="text-align: right;">Total Qty</th>
-                            <th style="text-align: right;">Rate</th>
-                            <th style="text-align: right;">Amount</th>
+                            <th style="text-align: center; width: 70px;">Unit</th>
+                            <th style="text-align: right; width: 100px;">Quantity</th>
+                            <th style="text-align: right; width: 100px;">Rate (₹)</th>
+                            <th style="text-align: right; width: 120px;">Amount (₹)</th>
                         </tr>
                     </thead>
                     <tbody>${labourRows}</tbody>
@@ -880,7 +1178,8 @@
             </div>
 
             <div class="estimate-totals">
-                <h3>Final Totals</h3>
+                ${printHeader}
+                <h3>💰 Cost Summary</h3>
                 <table class="totals-table">
                     <tbody>
                         <tr>
@@ -892,8 +1191,8 @@
                             <td>${formatCurrency(totalLabourCost)}</td>
                         </tr>
                         <tr>
-                            <td>Sub-Total</td>
-                            <td>${formatCurrency(subTotal)}</td>
+                            <td><strong>Sub-Total (Material + Labour)</strong></td>
+                            <td><strong>${formatCurrency(subTotal)}</strong></td>
                         </tr>
                         <tr>
                             <td>GST (${estimate.gstPercent}% ${gstLabel})</td>
@@ -904,7 +1203,7 @@
                             <td>${formatCurrency(contingencyAmount)}</td>
                         </tr>
                         <tr>
-                            <td>Supervision Cost (${estimate.supervisionPercent}% ${supervisionLabel})</td>
+                            <td>Supervision (${estimate.supervisionPercent}% ${supervisionLabel})</td>
                             <td>${formatCurrency(supervisionAmount)}</td>
                         </tr>
                         <tr>
@@ -940,10 +1239,10 @@
 
     function parseCSV(text) {
         const lines = text.trim().split('\n');
-        const headers = lines[0].split(',').map(h => h.trim());
+        const headers = parseCSVLine(lines[0]);
         const rows = [];
         for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',').map(v => v.trim());
+            const values = parseCSVLine(lines[i]);
             if (values.length === headers.length) {
                 const row = {};
                 for (let j = 0; j < headers.length; j++) {
@@ -953,6 +1252,26 @@
             }
         }
         return rows;
+    }
+
+    function parseCSVLine(line) {
+        const values = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                values.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        values.push(current.trim());
+        return values;
     }
 
 </script>
