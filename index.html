@@ -65,7 +65,7 @@
 
         .step {
             display: none;
-            padding: 2.5rem;
+            padding: 2rem;
             animation: fadeIn 0.5s ease-in-out;
         }
 
@@ -83,21 +83,21 @@
             font-weight: 600;
             color: var(--secondary-color);
             margin-top: 0;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             text-align: center;
         }
 
         .card-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
+            gap: 1rem;
         }
 
         .card {
             background: var(--white);
             border: 1px solid var(--medium-gray);
             border-radius: 8px;
-            padding: 2rem 1rem;
+            padding: 1.5rem 1rem;
             text-align: center;
             font-size: 1.1rem;
             font-weight: 600;
@@ -120,14 +120,14 @@
         .structure-list {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            gap: 1rem;
         }
 
         .structure-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem;
+            padding: 0.8rem 1rem;
             border: 1px solid var(--medium-gray);
             border-radius: 8px;
             flex-wrap: wrap;
@@ -145,11 +145,22 @@
         }
 
         .structure-info p {
-            margin: 0;
+            margin: 0; 
             font-size: 0.9rem;
             color: #666;
         }
 
+        .structure-description {
+            display: none; /* Hidden by default */
+            padding-top: 0.5rem;
+            font-size: 0.9rem; 
+            color: #666;
+        }
+
+        .structure-item.expanded .structure-description {
+            display: block; /* Shown when parent is expanded */
+        }
+ 
         .quantity-input {
             display: flex;
             align-items: center;
@@ -162,15 +173,48 @@
 
         .quantity-input input {
             width: 70px;
-            padding: 0.5rem;
+            padding: 0.4rem;
             border: 1px solid var(--medium-gray);
             border-radius: 4px;
             font-size: 1rem;
             text-align: center;
         }
 
-        .form-group {
+        /* Tab view styles */
+        .tab-container {
+            width: 100%;
+        }
+
+        .tab-buttons {
+            display: flex;
+            border-bottom: 2px solid var(--medium-gray);
             margin-bottom: 1.5rem;
+        }
+
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--dark-gray);
+            border-bottom: 3px solid transparent;
+            transition: color 0.2s, border-color 0.2s;
+            margin-bottom: -2px; /* Align with the container's bottom border */
+        }
+
+        .tab-button.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
         }
 
         .form-group label {
@@ -181,23 +225,11 @@
 
         .form-group input {
             width: 100%;
-            padding: 0.75rem;
+            padding: 0.6rem 0.75rem;
             font-size: 1rem;
             border: 1px solid var(--medium-gray);
             border-radius: 4px;
             box-sizing: border-box;
-        }
-
-        .cost-item {
-            border: 1px solid var(--medium-gray);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            background: #fdfdfd;
-        }
-
-        .cost-item .form-group {
-            margin-bottom: 1rem;
         }
 
         .radio-group label {
@@ -217,10 +249,38 @@
             margin-right: 0.5rem;
         }
 
+        /* New styles for the additional costs table */
+        .additional-costs-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .additional-costs-table th, .additional-costs-table td {
+            border: 1px solid var(--medium-gray);
+            padding: 0.75rem 1rem;
+            text-align: left;
+            vertical-align: top;
+        }
+        .additional-costs-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        .additional-costs-table td:nth-child(1) {
+            font-weight: 600;
+            width: 25%;
+        }
+        .additional-costs-table td:nth-child(2) {
+            width: 20%;
+        }
+        .additional-costs-table .radio-group label {
+            display: inline;
+            margin: 0;
+        }
+
         .button-group {
             display: flex;
             justify-content: space-between;
-            margin-top: 2.5rem;
+            margin-top: 2rem;
         }
 
         .btn {
@@ -252,7 +312,7 @@
         }
 
         #estimate-output {
-            padding: 2rem;
+            padding: 1.5rem 2rem;
         }
 
         .estimate-header, .estimate-summary, .estimate-totals {
@@ -300,13 +360,14 @@
         .estimate-table {
             width: 100%;
             border-collapse: collapse;
+            font-family: var(--font-family); /* Apply consistent font */
             margin-top: 0.5rem;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .estimate-table th, .estimate-table td {
             border: 1px solid var(--medium-gray);
-            padding: 0.75rem;
+            padding: 0.6rem 0.75rem;
             text-align: left;
         }
 
@@ -330,22 +391,22 @@
             font-weight: 600;
         }
 
-        .estimate-table td:nth-child(3),
-        .estimate-table td:nth-child(4),
-        .estimate-table td:nth-child(5) {
+        /* Right-align numeric columns */
+        .estimate-table td:nth-child(5),
+        .estimate-table td:nth-child(6),
+        .estimate-table td:nth-child(7) {
             text-align: right;
         }
 
         .totals-table {
             width: 100%;
-            max-width: 500px;
-            margin-left: auto;
             border-collapse: collapse;
+            font-family: var(--font-family); /* Apply consistent font */
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .totals-table td {
-            padding: 0.85rem 1rem;
+            padding: 0.65rem 1rem;
             border: 1px solid var(--medium-gray);
         }
 
@@ -367,7 +428,6 @@
 
         .totals-table td:last-child {
             text-align: right;
-            font-family: 'Courier New', monospace;
         }
 
         .loader {
@@ -421,8 +481,6 @@
                 padding: 0;
                 background-color: var(--white);
                 font-size: 10pt;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
             }
             
             .container {
@@ -451,11 +509,11 @@
             /* Print header that appears on each page */
             .print-header {
                 display: block !important;
-                background: linear-gradient(135deg, #005A9C 0%, #003366 100%) !important;
-                color: white !important;
+                background: none !important;
+                color: black !important;
                 padding: 12px 15px;
                 margin-bottom: 15px;
-                border-radius: 4px;
+                border: 1px solid #333;
             }
             
             .print-header-content {
@@ -487,8 +545,8 @@
             }
             
             .header-details {
-                background: #f0f0f0 !important;
-                border-left: 3px solid #005A9C !important;
+                background: none !important;
+                border-left: 3px solid #333 !important;
                 padding: 8px 12px;
             }
 
@@ -498,9 +556,9 @@
             }
             
             .estimate-summary h3, .estimate-totals h3 {
-                color: #003366 !important;
+                color: #000 !important;
                 font-size: 12pt;
-                border-bottom: 2px solid #005A9C;
+                border-bottom: 2px solid #333;
                 padding-bottom: 5px;
                 margin-top: 0;
                 margin-bottom: 10px;
@@ -514,12 +572,10 @@
             }
             
             .estimate-table th {
-                background: #005A9C !important;
-                color: white !important;
+                background: #e0e0e0 !important; /* Light gray for header */
+                color: black !important;
                 padding: 8px 6px;
                 font-size: 8pt;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
             }
             
             .estimate-table td {
@@ -528,9 +584,7 @@
             }
             
             .estimate-table tbody tr:nth-child(even) {
-                background-color: #f5f5f5 !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
+                background-color: transparent !important;
             }
 
             /* Add serial number column styling */
@@ -541,7 +595,6 @@
 
             /* Totals table styling */
             .totals-table {
-                max-width: 350px;
                 font-size: 9pt;
                 box-shadow: none;
             }
@@ -551,26 +604,12 @@
             }
             
             .totals-table tr:nth-child(odd) {
-                background-color: #f5f5f5 !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
+                background-color: #f5f5f5 !important; /* Keep light striping for readability */
             }
             
             .totals-table tr:last-child {
-                background: #005A9C !important;
-                color: white !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            
-            .totals-table tr:last-child td {
-                color: white !important;
-            }
-
-            /* Page breaks for different sections */
-            .estimate-summary {
-                page-break-before: always;
-                padding-top: 10px;
+                background: none !important;
+                color: black !important;
             }
             
             .estimate-summary:first-of-type {
@@ -580,6 +619,15 @@
             .estimate-totals {
                 page-break-before: always;
                 padding-top: 10px;
+            }
+
+            .totals-in-words {
+                text-align: center;
+                font-style: italic;
+                margin-top: 1rem;
+                padding: 0.25rem;
+                background: none !important;
+                border: 1px solid #ccc;
             }
             
             /* Prevent breaking inside tables */
@@ -598,6 +646,19 @@
             .totals-table {
                 page-break-inside: avoid;
             }
+        }
+        
+        .signatures {
+            margin-top: 3rem;
+            display: flex;
+            justify-content: space-between;
+            padding: 1.5rem 1rem 0;
+            border-top: 1px solid var(--medium-gray);
+        }
+        .signatures div {
+            text-align: center;
+            width: 45%;
+            font-size: 0.9rem;
         }
 
     </style>
@@ -628,6 +689,7 @@
             <div class="card" data-value="11 kV">11 kV</div>
             <div class="card" data-value="DTR">DTR</div>
             <div class="card" data-value="LT">LT</div>
+            <div class="card" data-value="Special Structure">Special Structure</div>
         </div>
         <div class="button-group">
             <button class="btn btn-secondary" onclick="goToStep(1)">Back</button>
@@ -638,12 +700,12 @@
     <!-- Step 3: Structure Types -->
     <div id="step-3" class="step">
         <h2 class="step-title">Step 3: Enter Structure Quantities</h2>
-        <div id="structure-list" class="structure-list">
+        <div id="structure-tabs-container">
             <!-- Structure items will be dynamically inserted here -->
         </div>
         <div class="button-group">
             <button class="btn btn-secondary" onclick="goToStep(2)">Back</button>
-            <button class="btn btn-primary" onclick="goToStep(4)">Next</button>
+            <button class="btn btn-primary" onclick="handleStep3Next()">Next</button>
         </div>
     </div>
 
@@ -652,7 +714,15 @@
         <h2 class="step-title">Step 4: Name Your Project</h2>
         <div class="form-group">
             <label for="work-name">Work Name / Description</label>
-            <input type="text" id="work-name" placeholder="e.g., 33 kV Line Extension at XYZ">
+            <input type="text" id="work-name" placeholder="e.g., 33 kV Line Extension at XYZ" required>
+        </div>
+        <div class="form-group">
+            <label for="prepared-by">Estimate Prepared By</label>
+            <input type="text" id="prepared-by" placeholder="Enter name or department" required>
+        </div>
+        <div class="form-group">
+            <label for="surveyed-by">Survey Done By</label>
+            <input type="text" id="surveyed-by" placeholder="Enter name or department" required>
         </div>
         <div class="button-group">
             <button class="btn btn-secondary" onclick="goToStep(3)">Back</button>
@@ -663,57 +733,53 @@
     <!-- Step 4.5: Additional Costs -->
     <div id="step-4.5" class="step">
         <h2 class="step-title">Step 5: Add Additional Costs (Optional)</h2>
-        <div class="cost-item">
-            <div class="form-group">
-                <label for="gst-percent">GST (%)</label>
-                <input type="number" id="gst-percent" placeholder="e.g., 18" value="18">
-            </div>
-            <div class="radio-group">
-                <label>Calculate GST On:</label>
-                <div><input type="radio" id="gst-mat-lab" name="gst-on" value="mat-lab" checked><label for="gst-mat-lab">Material + Labour</label></div>
-                <div><input type="radio" id="gst-mat" name="gst-on" value="mat"><label for="gst-mat">Material Value</label></div>
-                <div><input type="radio" id="gst-lab" name="gst-on" value="lab"><label for="gst-lab">Labour Value</label></div>
-            </div>
-        </div>
-
-        <div class="cost-item">
-            <div class="form-group">
-                <label for="contingency-percent">Contingency (%)</label>
-                <input type="number" id="contingency-percent" placeholder="e.g., 3" value="3">
-            </div>
-             <div class="radio-group">
-                <label>Calculate Contingency On:</label>
-                <div><input type="radio" id="contingency-mat-lab" name="contingency-on" value="mat-lab" checked><label for="contingency-mat-lab">Material + Labour</label></div>
-                <div><input type="radio" id="contingency-mat" name="contingency-on" value="mat"><label for="contingency-mat">Material Value</label></div>
-                <div><input type="radio" id="contingency-lab" name="contingency-on" value="lab"><label for="contingency-lab">Labour Value</label></div>
-            </div>
-        </div>
-
-        <div class="cost-item">
-            <div class="form-group">
-                <label for="supervision-percent">Supervision Cost (%)</label>
-                <input type="number" id="supervision-percent" placeholder="e.g., 5" value="5">
-            </div>
-             <div class="radio-group">
-                <label>Calculate Supervision Cost On:</label>
-                <div><input type="radio" id="supervision-mat-lab" name="supervision-on" value="mat-lab" checked><label for="supervision-mat-lab">Material + Labour</label></div>
-                <div><input type="radio" id="supervision-mat" name="supervision-on" value="mat"><label for="supervision-mat">Material Value</label></div>
-                <div><input type="radio" id="supervision-lab" name="supervision-on" value="lab"><label for="supervision-lab">Labour Value</label></div>
-            </div>
-        </div>
-
-        <div class="cost-item">
-            <div class="form-group">
-                <label for="cess-percent">Cess (%)</label>
-                <input type="number" id="cess-percent" placeholder="e.g., 1" value="1">
-            </div>
-             <div class="radio-group">
-                <label>Calculate Cess On:</label>
-                <div><input type="radio" id="cess-mat-lab" name="cess-on" value="mat-lab" checked><label for="cess-mat-lab">Material + Labour</label></div>
-                <div><input type="radio" id="cess-mat" name="cess-on" value="mat"><label for="cess-mat">Material Value</label></div>
-                <div><input type="radio" id="cess-lab" name="cess-on" value="lab"><label for="cess-lab">Labour Value</label></div>
-            </div>
-        </div>
+        <table class="additional-costs-table">
+            <thead>
+                <tr>
+                    <th>Cost Type</th>
+                    <th>Percentage (%)</th>
+                    <th>Calculation Basis</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>GST</td>
+                    <td><input type="number" id="gst-percent" value="18" class="form-control"></td>
+                    <td class="radio-group">
+                        <div><input type="radio" id="gst-mat-lab" name="gst-on" value="mat-lab" checked><label for="gst-mat-lab">Material + Labour</label></div>
+                        <div><input type="radio" id="gst-mat" name="gst-on" value="mat"><label for="gst-mat">Material Only</label></div>
+                        <div><input type="radio" id="gst-lab" name="gst-on" value="lab"><label for="gst-lab">Labour Only</label></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Contingency</td>
+                    <td><input type="number" id="contingency-percent" value="3" class="form-control"></td>
+                    <td class="radio-group">
+                        <div><input type="radio" id="contingency-mat-lab" name="contingency-on" value="mat-lab" checked><label for="contingency-mat-lab">Material + Labour</label></div>
+                        <div><input type="radio" id="contingency-mat" name="contingency-on" value="mat"><label for="contingency-mat">Material Only</label></div>
+                        <div><input type="radio" id="contingency-lab" name="contingency-on" value="lab"><label for="contingency-lab">Labour Only</label></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Supervision Cost</td>
+                    <td><input type="number" id="supervision-percent" value="5" class="form-control"></td>
+                    <td class="radio-group">
+                        <div><input type="radio" id="supervision-mat-lab" name="supervision-on" value="mat-lab" checked><label for="supervision-mat-lab">Material + Labour</label></div>
+                        <div><input type="radio" id="supervision-mat" name="supervision-on" value="mat"><label for="supervision-mat">Material Only</label></div>
+                        <div><input type="radio" id="supervision-lab" name="supervision-on" value="lab"><label for="supervision-lab">Labour Only</label></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Cess</td>
+                    <td><input type="number" id="cess-percent" value="1" class="form-control"></td>
+                    <td class="radio-group">
+                        <div><input type="radio" id="cess-mat-lab" name="cess-on" value="mat-lab" checked><label for="cess-mat-lab">Material + Labour</label></div>
+                        <div><input type="radio" id="cess-mat" name="cess-on" value="mat"><label for="cess-mat">Material Only</label></div>
+                        <div><input type="radio" id="cess-lab" name="cess-on" value="lab"><label for="cess-lab">Labour Only</label></div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
 
         <div class="button-group">
             <button class="btn btn-secondary" onclick="goToStep(4)">Back</button>
@@ -733,6 +799,7 @@
         </div>
         <div id="export-buttons" class="export-buttons" style="display: none;">
              <button class="btn btn-secondary" onclick="goToStep(1)">Start New Estimate</button>
+             <button class="btn btn-secondary" onclick="goToStep(4.5)">Back to Edit</button>
              <button class="btn btn-primary" onclick="window.print()">Print / Save as PDF</button>
         </div>
     </div>
@@ -751,6 +818,8 @@
         voltageLevels: [],
         structures: {}, // { structureId: quantity }
         workName: '',
+        preparedBy: '',
+        surveyedBy: '',
         estimateId: '',
         gstPercent: 18,
         contingencyPercent: 3,
@@ -813,6 +882,35 @@
                 };
             });
 
+            // Add demo special structures programmatically
+            const demoSpecialStructures = [
+                {
+                    id: 'spec-001',
+                    name: 'Railway Crossing Structure',
+                    description: 'Special steel structure for crossing railway lines, includes extra clearance and safety measures.',
+                    voltage: ['Special Structure'],
+                    materials: [{ index: 10, qty: 5 }, { index: 15, qty: 20 }, { index: 22, qty: 8 }], // Example material indices
+                    labour: [{ index: 5, qty: 40 }, { index: 8, qty: 25 }, { index: 12, qty: 60 }] // Example labour indices
+                },
+                {
+                    id: 'spec-002',
+                    name: 'River Crossing Tower',
+                    description: 'Tall lattice tower designed for crossing wide rivers, ensuring navigational clearance.',
+                    voltage: ['Special Structure'],
+                    materials: [{ index: 18, qty: 12 }, { index: 25, qty: 50 }, { index: 30, qty: 15 }],
+                    labour: [{ index: 7, qty: 150 }, { index: 10, qty: 80 }]
+                },
+                {
+                    id: 'spec-003',
+                    name: 'Highway Gantry Crossing',
+                    description: 'Gantry-type structure for safely crossing multi-lane highways.',
+                    voltage: ['Special Structure'],
+                    materials: [{ index: 12, qty: 8 }, { index: 20, qty: 30 }],
+                    labour: [{ index: 6, qty: 80 }, { index: 9, qty: 40 }]
+                }
+            ];
+            structureLibrary.push(...demoSpecialStructures);
+
             // Sort the library by name
             structureLibrary.sort((a, b) => a.name.localeCompare(b.name));
             console.log("Structure library loaded successfully:", structureLibrary.length, "structures");
@@ -823,6 +921,10 @@
             alert("Error: Could not load the core structure data from the server. The application may not function correctly.");
         }
     });
+
+    // Styles for collapsible structure descriptions (already present in CSS, no change needed here)
+
+
 
     // --- UI NAVIGATION ---
     let currentStep = 1;
@@ -836,8 +938,21 @@
             renderStructureList();
         }
         if (stepNumber === 5) {
-            // Capture values from Step 4 and 4.5
-            estimate.workName = document.getElementById('work-name').value || 'Untitled Project';
+            // Capture values from Step 4 and 4.5 and validate
+            const workName = document.getElementById('work-name').value.trim();
+            const preparedBy = document.getElementById('prepared-by').value.trim();
+            const surveyedBy = document.getElementById('surveyed-by').value.trim();
+
+            if (!workName || !preparedBy || !surveyedBy) {
+                alert('Please fill out all fields in Step 4: Work Name, Prepared By, and Surveyed By.');
+                goToStep(4); // Go back to the form if validation fails
+                return;
+            }
+
+            estimate.workName = workName;
+            estimate.preparedBy = preparedBy;
+            estimate.surveyedBy = surveyedBy;
+
             estimate.gstPercent = parseFloat(document.getElementById('gst-percent').value) || 0;
             estimate.gstOn = document.querySelector('input[name="gst-on"]:checked').value;
             estimate.contingencyPercent = parseFloat(document.getElementById('contingency-percent').value) || 0;
@@ -863,6 +978,8 @@
         estimate.voltageLevels = [];
         estimate.structures = {};
         estimate.workName = '';
+        estimate.preparedBy = '';
+        estimate.surveyedBy = '';
         estimate.estimateId = '';
         estimate.gstPercent = 18;
         estimate.contingencyPercent = 3;
@@ -875,6 +992,8 @@
         
         document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'));
         document.getElementById('work-name').value = '';
+        document.getElementById('prepared-by').value = '';
+        document.getElementById('surveyed-by').value = '';
         document.getElementById('estimate-output').style.display = 'none';
         document.getElementById('export-buttons').style.display = 'none';
         document.getElementById('loader').style.display = 'block';
@@ -904,38 +1023,90 @@
 
     // --- STEP 3: STRUCTURES ---
     function renderStructureList() {
-        const listContainer = document.getElementById('structure-list');
-        listContainer.innerHTML = '';
+        const tabsContainer = document.getElementById('structure-tabs-container');
+        tabsContainer.innerHTML = ''; // Clear previous content
         
-        console.log("Selected voltage levels:", estimate.voltageLevels);
-        console.log("Structure library size:", structureLibrary.length);
-        
-        const relevantStructures = structureLibrary.filter(s => 
+        const relevantStructures = structureLibrary.filter(s =>
             s.voltage.some(v => estimate.voltageLevels.includes(v))
         );
-        
-        console.log("Matching structures:", relevantStructures.length);
 
         if (relevantStructures.length === 0) {
-            listContainer.innerHTML = '<p>No structures available for the selected voltage levels.</p>';
+            tabsContainer.innerHTML = '<p>No structures available for the selected voltage levels.</p>';
             return;
         }
 
-        relevantStructures.forEach(structure => {
-            const quantity = estimate.structures[structure.id] || 0;
-            const itemHTML = `
-                <div class="structure-item" data-id="${structure.id}">
-                    <div class="structure-info">
-                        <h4>${structure.name}</h4>
-                        <p>${structure.description}</p>
-                    </div>
-                    <div class="quantity-input">
-                        <label for="qty-${structure.id}">Quantity:</label>
-                        <input type="number" id="qty-${structure.id}" min="0" value="${quantity}" onchange="updateStructureQuantity('${structure.id}', this.value)">
-                    </div>
-                </div>
-            `;
-            listContainer.insertAdjacentHTML('beforeend', itemHTML);
+        // Create tab structure
+        const tabButtons = document.createElement('div');
+        tabButtons.className = 'tab-buttons';
+        const tabContent = document.createElement('div');
+        tabContent.className = 'tab-content';
+
+        tabsContainer.appendChild(tabButtons);
+        tabsContainer.appendChild(tabContent);
+
+        // Group and render
+        const groupedStructures = {};
+        estimate.voltageLevels.forEach(voltage => {
+            groupedStructures[voltage] = relevantStructures.filter(s => s.voltage.includes(voltage));
+        });
+
+        let isFirstTab = true;
+        for (const voltage in groupedStructures) {
+            const structures = groupedStructures[voltage];
+            if (structures.length === 0) continue;
+
+            // Create tab button
+            const button = document.createElement('button');
+            button.className = 'tab-button';
+            button.textContent = voltage;
+            button.dataset.voltage = voltage;
+            tabButtons.appendChild(button);
+
+            // Create tab pane
+            const pane = document.createElement('div');
+            pane.className = 'tab-pane';
+            pane.dataset.voltage = voltage;
+            
+            const structureListDiv = document.createElement('div');
+            structureListDiv.className = 'structure-list';
+            pane.appendChild(structureListDiv);
+
+            structures.forEach(structure => {
+                const quantity = estimate.structures[structure.id] || 0;
+                structureListDiv.innerHTML += `
+                    <div class="structure-item" data-id="${structure.id}" onclick="toggleDescription(this)">
+                        <div class="structure-info"> 
+                            <h4>${structure.name}</h4>
+                            <div class="structure-description">
+                                <p>${structure.description || 'No description available.'}</p>
+                            </div>
+                        </div>
+                        <div class="quantity-input"><label for="qty-${structure.id}">Quantity:</label><input type="number" id="qty-${structure.id}" min="0" value="${quantity}" onchange="updateStructureQuantity('${structure.id}', this.value)"></div>
+                    </div>`;
+            });
+
+            tabContent.appendChild(pane);
+
+            if (isFirstTab) {
+                button.classList.add('active');
+                pane.style.display = 'block';
+                isFirstTab = false;
+            }
+        }
+
+        // Add event listener for tab clicks
+        tabButtons.addEventListener('click', (e) => {
+            if (e.target.matches('.tab-button')) {
+                const targetVoltage = e.target.dataset.voltage;
+
+                // Deactivate all
+                tabButtons.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                tabContent.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+
+                // Activate target
+                e.target.classList.add('active');
+                tabContent.querySelector(`.tab-pane[data-voltage="${targetVoltage}"]`).style.display = 'block';
+            }
         });
     }
 
@@ -943,8 +1114,29 @@
         const numQuantity = parseInt(quantity, 10);
         if (numQuantity > 0) {
             estimate.structures[structureId] = numQuantity;
+        } else { delete estimate.structures[structureId]; }
+    }
+
+    function toggleDescription(element) {
+        element.classList.toggle('expanded');
+    }
+
+    function handleStep3Next() {
+        const tabsContainer = document.getElementById('structure-tabs-container');
+        const tabButtons = tabsContainer.querySelectorAll('.tab-button');
+        const activeTabButton = tabsContainer.querySelector('.tab-button.active');
+
+        if (!activeTabButton) {
+            goToStep(4); // Should not happen if tabs are rendered, but as a fallback
+            return;
+        }
+
+        const currentIndex = Array.from(tabButtons).indexOf(activeTabButton);
+
+        if (currentIndex < tabButtons.length - 1) {
+            tabButtons[currentIndex + 1].click(); // Simulate click on the next tab
         } else {
-            delete estimate.structures[structureId];
+            goToStep(4); // All tabs viewed, proceed to next step
         }
     }
 
@@ -972,10 +1164,12 @@
                     if (!masterItem) {
                         missingItems.push(`Material at index ${item.index} for structure '${structure.name}' not found in master sheet.`);
                         return;
-                    }
-                    const itemCode = masterItem['mat_sl']; // Use mat_sl as the unique key
+                    }                    
+                    const itemCode = masterItem['Materials Code']; // This is the value from the first column, used as the unique key.
+
                     if (!consolidatedMaterials[itemCode]) {
                         consolidatedMaterials[itemCode] = {
+                            code: itemCode, // The code to display is the key itself.
                             name: masterItem['Description'],
                             unit: masterItem['Unit'],
                             rate: parseFloat(masterItem['Rate(Rs)']),
@@ -1050,6 +1244,7 @@
             return `
                 <tr>
                     <td style="text-align: center;">${slNo++}</td>
+                    <td>${item.code}</td>
                     <td>${item.name}</td>
                     <td style="text-align: center;">${item.unit}</td>
                     <td style="text-align: right;">${item.totalQty.toFixed(2)}</td>
@@ -1062,7 +1257,7 @@
         // Add total row to materials
         materialRows += `
             <tfoot>
-                <td colspan="5" style="text-align: right;">Total Material Cost</td>
+                <td colspan="6" style="text-align: right;">Total Material Cost</td>
                 <td style="text-align: right;">${formatCurrency(totalMaterialCost)}</td>
             </tfoot>
         `;
@@ -1122,7 +1317,10 @@
         const cessAmount = cessBase * (estimate.cessPercent / 100);
         const cessLabel = getLabel(estimate.cessOn);
 
+        // Calculate grand total
         const grandTotal = subTotal + gstAmount + contingencyAmount + supervisionAmount + cessAmount;
+        // Convert grand total to words
+        const grandTotalInWords = convertNumberToWordsINR(grandTotal);
 
 
         const missingItemsHtml = missingItems.length > 0 
@@ -1147,12 +1345,13 @@
                 <table class="estimate-table">
                     <thead>
                         <tr>
-                            <th style="text-align: center; width: 50px;">Sl.No</th>
+                            <th style="text-align: center; width: 5%;">Sl.No</th>
+                            <th>Code</th>
                             <th>Item Description</th>
-                            <th style="text-align: center; width: 70px;">Unit</th>
-                            <th style="text-align: right; width: 100px;">Quantity</th>
-                            <th style="text-align: right; width: 100px;">Rate (₹)</th>
-                            <th style="text-align: right; width: 120px;">Amount (₹)</th>
+                            <th style="text-align: center; width: 8%;">Unit</th>
+                            <th style="text-align: right; width: 10%;">Quantity</th>
+                            <th style="text-align: right; width: 12%;">Rate (₹)</th>
+                            <th style="text-align: right; width: 15%;">Amount (₹)</th>
                         </tr>
                     </thead>
                     <tbody>${materialRows}</tbody>
@@ -1165,12 +1364,12 @@
                 <table class="estimate-table">
                     <thead>
                         <tr>
-                            <th style="text-align: center; width: 50px;">Sl.No</th>
+                            <th style="text-align: center; width: 5%;">Sl.No</th>
                             <th>Labour Activity</th>
-                            <th style="text-align: center; width: 70px;">Unit</th>
-                            <th style="text-align: right; width: 100px;">Quantity</th>
-                            <th style="text-align: right; width: 100px;">Rate (₹)</th>
-                            <th style="text-align: right; width: 120px;">Amount (₹)</th>
+                            <th style="text-align: center; width: 8%;">Unit</th>
+                            <th style="text-align: right; width: 10%;">Quantity</th>
+                            <th style="text-align: right; width: 12%;">Rate (₹)</th>
+                            <th style="text-align: right; width: 15%;">Amount (₹)</th>
                         </tr>
                     </thead>
                     <tbody>${labourRows}</tbody>
@@ -1216,6 +1415,18 @@
                         </tr>
                     </tbody>
                 </table>
+                <div class="totals-in-words">
+                    <strong>In Words:</strong> Rupees ${grandTotalInWords} Only
+                </div>
+
+                <div class="signatures">
+                    <div>
+                        <p><strong>Survey Done By:</strong></p><p>${estimate.surveyedBy}</p>
+                    </div>
+                    <div>
+                        <p><strong>Estimate Prepared By:</strong></p><p>${estimate.preparedBy}</p>
+                    </div>
+                </div>
             </div>
         `;
 
@@ -1274,7 +1485,84 @@
         return values;
     }
 
+    // Function to convert numbers to words (Indian Rupees)
+    function convertNumberToWordsINR(num) {
+        if (num === 0) return "Zero";
+
+        const a = [
+            '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+            'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen',
+            'Eighteen', 'Nineteen'
+        ];
+        const b = [
+            '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'
+        ];
+        const c = [
+            '', 'Hundred', 'Thousand', 'Lakh', 'Crore'
+        ];
+
+        let n = Math.round(num * 100) / 100; // Round to 2 decimal places
+        let integerPart = Math.floor(n);
+        let decimalPart = Math.round((n - integerPart) * 100);
+
+        let words = '';
+
+        function convertChunk(val) {
+            let chunkWords = '';
+            if (val < 20) {
+                chunkWords = a[val];
+            } else {
+                chunkWords = b[Math.floor(val / 10)];
+                if (val % 10 !== 0) {
+                    chunkWords += ' ' + a[val % 10];
+                }
+            }
+            return chunkWords;
+        }
+
+        // Convert integer part
+        let i = 0;
+        let tempNum = integerPart;
+        while (tempNum > 0) {
+            let chunk;
+            if (i === 0) { // Hundreds and tens/units
+                chunk = tempNum % 1000;
+                tempNum = Math.floor(tempNum / 1000);
+                let hundreds = Math.floor(chunk / 100);
+                let tensUnits = chunk % 100;
+                let currentChunkWords = '';
+                if (hundreds > 0) {
+                    currentChunkWords += a[hundreds] + ' Hundred';
+                }
+                if (tensUnits > 0) {
+                    if (hundreds > 0) currentChunkWords += ' and ';
+                    currentChunkWords += convertChunk(tensUnits);
+                }
+                if (currentChunkWords) {
+                    words = currentChunkWords + words;
+                }
+            } else { // Thousands, Lakhs, Crores
+                chunk = tempNum % 100; // Take two digits for Lakhs and Crores
+                tempNum = Math.floor(tempNum / 100);
+                if (chunk > 0) {
+                    words = convertChunk(chunk) + ' ' + c[i] + ' ' + words;
+                }
+            }
+            i++;
+        }
+
+        if (words.trim() === '') words = 'Zero';
+
+        // Add decimal part
+        if (decimalPart > 0) {
+            words += ' and ' + convertChunk(decimalPart) + ' Paisa';
+        }
+
+        return words.trim();
+    }
+
 </script>
+
 
 </body>
 </html>
