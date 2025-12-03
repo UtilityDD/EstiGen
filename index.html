@@ -1252,12 +1252,20 @@
                 body: JSON.stringify(payload)
             });
 
-            if (!response.ok) {
-                const errorResult = await response.json();
-                throw new Error(errorResult.message || 'Server returned an error during estimate generation.');
-            }
+            const responseText = await response.text();
 
-            const result = await response.json();
+            if (!response.ok) {
+                // Try to parse as JSON, but fall back to the raw text if it fails.
+                let errorMessage = 'Server returned an error during estimate generation.';
+                try {
+                    const errorResult = JSON.parse(responseText);
+                    errorMessage = errorResult.message || errorMessage;
+                } catch (e) {
+                    errorMessage = responseText || `Server error: ${response.status} ${response.statusText}`;
+                }
+                throw new Error(errorMessage);
+            }
+            const result = JSON.parse(responseText);
             // 3. Render the output using the data calculated and returned by the server.
             renderOutput(result.materials, result.labour, result.missingItems);
 

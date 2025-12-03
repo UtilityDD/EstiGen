@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware to parse JSON bodies and serve static files
 app.use(express.json());
 app.use(express.static(__dirname));
-// Serve the data folder from parent directory
+// Serve the data folder from the parent directory at the /data route
 app.use('/data', express.static(path.join(__dirname, '..', 'data')));
 
 // --- File Paths ---
@@ -111,6 +111,110 @@ app.post('/api/structures/update', (req, res) => {
     } catch (error) {
         console.error("Error writing structure file:", error.message);
         res.status(500).json({ message: 'An error occurred while saving data.', details: error.message });
+    }
+});
+
+// API endpoint to generate estimate from posted structures and library
+app.post('/api/generate-estimate', (req, res) => {
+    try {
+        const payload = req.body || {};
+        const structures = payload.structures || {};
+        const library = payload.structureLibrary || [];
+
+        // Load material and labour master lists
+        const matText = fs.readFileSync(path.join(__dirname, '..', 'data', 'mat.csv'), 'utf-8');
+        const labText = fs.readFileSync(path.join(__dirname, '..', 'data', 'lab.csv'), 'utf-8');
+        const matRows = parseCSV(matText);
+        const labRows = parseCSV(labText);
+
+        // Build lookup maps by mat_sl and lab_sl
+        const matBySl = {};
+        matRows.forEach(r => {
+            const key = r.mat_sl || r['mat_sl'];
+            if (key) matBySl[String(key).trim()] = r;
+        });
+        const labBySl = {};
+        labRows.forEach(r => {
+            const key = r.lab_sl || r['lab_sl'];
+            if (key) labBySl[String(key).trim()] = r;
+        });
+
+        const materialsAgg = {}; // key = mat_sl
+        const labourAgg = {}; // key = lab_sl
+        const missingItems = [];
+
+        // structures is expected as { structureId: quantity }
+        for (const sid of Object.keys(structures)) {
+            const qty = Number(structures[sid]) || 0;
+            if (qty <= 0) continue;
+            const struct = library.find(s => String(s.id) === String(sid));
+            if (!struct) continue;
+
+            // struct.materials expected as array of { index, qty }
+            const mats = struct.materials || [];
+            mats.forEach(m => {
+                const matKey = String(m.index);
+                const perQty = Number(m.qty) || 0;
+                const totalQty = perQty * qty;
+                if (!matBySl[matKey]) {
+                    if (!missingItems.includes(matKey)) missingItems.push(matKey);
+                    return;
+                }
+                if (!materialsAgg[matKey]) materialsAgg[matKey] = { mat: matBySl[matKey], totalQty: 0 };
+                materialsAgg[matKey].totalQty += totalQty;
+            });
+
+            const labs = struct.labour || [];
+            labs.forEach(l => {
+                const labKey = String(l.index);
+                const perQty = Number(l.qty) || 0;
+                const totalQty = perQty * qty;
+                if (!labBySl[labKey]) {
+                    if (!missingItems.includes(labKey)) missingItems.push(labKey);
+                    return;
+                }
+                if (!labourAgg[labKey]) labourAgg[labKey] = { lab: labBySl[labKey], totalQty: 0 };
+                labourAgg[labKey].totalQty += totalQty;
+            });
+        }
+
+        // Convert aggregates to arrays with costs
+        const materials = Object.keys(materialsAgg).map(k => {
+            const entry = materialsAgg[k];
+            const rate = parseFloat(entry.mat['Rate(Rs)'] || entry.mat.Rate || 0);
+            const totalQty = entry.totalQty;
+            const cost = totalQty * rate;
+            return {
+                mat_sl: k,
+                code: entry.mat['Materials Code'] || entry.mat.code || '',
+                name: entry.mat.Description || '',
+                unit: entry.mat.Unit || '',
+                rate: rate,
+                totalQty: totalQty,
+                cost: cost
+            };
+        });
+
+        const labour = Object.keys(labourAgg).map(k => {
+            const entry = labourAgg[k];
+            const rate = parseFloat(entry.lab['Rate(Rs)'] || entry.lab.Rate || 0);
+            const totalQty = entry.totalQty;
+            const cost = totalQty * rate;
+            return {
+                lab_sl: k,
+                code: entry.lab['Labour Code'] || entry.lab.lab_code || '',
+                name: entry.lab.Description || '',
+                unit: entry.lab.Unit || '',
+                rate: rate,
+                totalQty: totalQty,
+                cost: cost
+            };
+        });
+
+        res.json({ materials, labour, missingItems });
+    } catch (error) {
+        console.error('generate-estimate error', error);
+        res.status(500).json({ message: 'Internal server error during estimate generation', details: error.message });
     }
 });
 
