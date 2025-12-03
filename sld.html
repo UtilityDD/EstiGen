@@ -223,6 +223,54 @@
             // Make the SVG elements draggable after they are in the DOM
             const svgElement = svgContainer.querySelector('svg');
             makeDraggable(svgElement);
+
+            // Attach direct dblclick handlers to labels to avoid pointer capture interference
+            svgElement.querySelectorAll('.sld-label').forEach(label => {
+                // ensure the text element accepts pointer events
+                label.style.pointerEvents = 'auto';
+                label.style.userSelect = 'none';
+
+                // Regular dblclick listener (mouse)
+                label.addEventListener('dblclick', (ev) => {
+                    ev.stopPropagation();
+                    editLabel(label);
+                });
+
+                // Pointer-based double-tap fallback (for pointer capture/touch where dblclick may not fire)
+                let lastTap = 0;
+                label.addEventListener('pointerdown', (ev) => {
+                    const now = Date.now();
+                    const delta = now - lastTap;
+                    lastTap = now;
+                    // consider double-tap if within 400ms
+                    if (delta > 0 && delta < 400) {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        editLabel(label);
+                    }
+                });
+            });
+
+            function editLabel(label) {
+                const group = label.closest('.draggable-group');
+                if (!group) return;
+                const current = label.textContent || '';
+                const newLabel = prompt('Edit node label:', current);
+                if (newLabel === null) return; // cancelled
+                label.textContent = newLabel;
+                group.dataset.customLabel = newLabel;
+                try {
+                    const lib = JSON.parse(sessionStorage.getItem('structureLibraryForSLD') || '[]');
+                    const structId = group.dataset.structId;
+                    const found = lib.find(x => String(x.id) === String(structId));
+                    if (found) {
+                        found.customLabel = newLabel;
+                        sessionStorage.setItem('structureLibraryForSLD', JSON.stringify(lib));
+                    }
+                } catch (e) {
+                    console.error('Failed to persist label to sessionStorage', e);
+                }
+            }
         }
     }
 
