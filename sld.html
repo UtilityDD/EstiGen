@@ -69,8 +69,9 @@
             flex-shrink: 0;
         }
         .svg-wrapper {
-            overflow-x: auto; /* Enable horizontal scrolling for the SVG */
-            padding-bottom: 10px; /* Space for scrollbar */
+            overflow: visible; /* Allow nodes to be visible outside SVG bounds to permit overlapping */
+            padding-bottom: 10px;
+            position: relative;
         }
         .draggable-group {
             cursor: move; /* Change cursor to indicate draggability */
@@ -173,7 +174,7 @@
             const svgWidth = maxX + 80;
             const svgHeight = 200; // Increased height for more dragging room
 
-            let svgContent = `<svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">`;
+            let svgContent = `<svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg" overflow="visible" style="overflow:visible;">`;
             
             // Draw line segments between nodes first
             structures.forEach((s, i) => {
@@ -213,6 +214,8 @@
             const svgContainer = document.createElement('div');
             svgContainer.className = 'svg-wrapper';
             svgContainer.innerHTML = svgContent;
+            // Fix the wrapper height so vertical expansion of the svg doesn't push other rows
+            svgContainer.style.minHeight = svgHeight + 'px';
             groupDiv.appendChild(svgContainer);
 
             container.appendChild(groupDiv);
@@ -225,14 +228,12 @@
 
     function makeDraggable(svg) {
         let selectedElement = null;
-        let offset;
-        const CTM = svg.getScreenCTM();
+        let pointerId = null;
+        let offset = { x: 0, y: 0 };
+        let pending = null;
+        let rafId = null;
 
-        svg.addEventListener('mousedown', startDrag, false);
-        svg.addEventListener('mousemove', drag);
-        svg.addEventListener('mouseup', endDrag);
-        svg.addEventListener('mouseleave', endDrag); // Stop dragging if mouse leaves SVG
-        // Allow double-clicking a node label to edit it and persist to sessionStorage
+        // Keep existing dblclick behavior for label editing
         svg.addEventListener('dblclick', function(evt){
             const group = evt.target.closest('.draggable-group');
             if (!group) return;
@@ -241,10 +242,8 @@
             const current = textEl.textContent || '';
             const newLabel = prompt('Edit node label:', current);
             if (newLabel === null) return; // cancelled
-            // Update visible label
             textEl.textContent = newLabel;
             group.dataset.customLabel = newLabel;
-            // Persist to structure library in sessionStorage if present
             try {
                 const lib = JSON.parse(sessionStorage.getItem('structureLibraryForSLD') || '[]');
                 const structId = group.dataset.structId;
@@ -257,7 +256,14 @@
                 console.error('Failed to persist label to sessionStorage', e);
             }
         });
+
+        svg.addEventListener('pointerdown', onPointerDown, { passive: false });
+        svg.addEventListener('pointermove', onPointerMove, { passive: false });
+        svg.addEventListener('pointerup', onPointerUp);
+        svg.addEventListener('pointercancel', onPointerUp);
+
         function getMousePosition(evt) {
+            const CTM = svg.getScreenCTM();
             const e = CTM ? CTM.e : 0;
             const f = CTM ? CTM.f : 0;
             const a = CTM ? CTM.a : 1;
@@ -268,49 +274,106 @@
             };
         }
 
-        function startDrag(evt) {
-            // Find the closest parent group that is draggable
+        function onPointerDown(evt) {
             const targetGroup = evt.target.closest('.draggable-group');
-            if (targetGroup) {
-                selectedElement = targetGroup;
-                offset = getMousePosition(evt);
-                
-                const transform = selectedElement.transform.baseVal.getItem(0);
-                offset.x -= transform.matrix.e;
-                offset.y -= transform.matrix.f;
-            }
-        }
-        
-        function drag(evt) {
-            if (selectedElement) {
-                evt.preventDefault();
-                const mousePos = getMousePosition(evt);
-                const newX = mousePos.x - offset.x;
-                const newY = mousePos.y - offset.y;
-                selectedElement.transform.baseVal.getItem(0).setTranslate(newX, newY);
+            if (!targetGroup) return;
+            evt.preventDefault();
+            selectedElement = targetGroup;
+            pointerId = evt.pointerId;
+            try { svg.setPointerCapture(pointerId); } catch (e) {}
+            const mouse = getMousePosition(evt);
 
-                const index = parseInt(selectedElement.dataset.index, 10);
-                const vid = selectedElement.dataset.voltage; // sanitized id
-
-                // Update the line segment connecting to the previous node
-                if (index > 0) {
-                    const prevLine = svg.querySelector(`#line-${vid}-${index - 1}`);
-                    if (prevLine) {
-                        prevLine.setAttribute('x2', newX);
-                        prevLine.setAttribute('y2', newY);
-                    } 
-                }
-                // Update the line segment connecting to the next node
-                const nextLine = svg.querySelector(`#line-${vid}-${index}`);
-                if (nextLine) {
-                    nextLine.setAttribute('x1', newX);
-                    nextLine.setAttribute('y1', newY);
-                }
+            // Ensure translate transform exists
+            const tlist = selectedElement.transform.baseVal;
+            if (tlist.numberOfItems === 0) {
+                const transform = svg.createSVGTransform();
+                transform.setTranslate(0, 0);
+                tlist.appendItem(transform);
             }
+            const transform = selectedElement.transform.baseVal.getItem(0);
+            offset.x = mouse.x - transform.matrix.e;
+            offset.y = mouse.y - transform.matrix.f;
+
+            // Bring to front so overlapping is obvious
+            try { svg.appendChild(selectedElement); } catch (e) { /* ignore */ }
         }
 
-        function endDrag() {
+        function onPointerMove(evt) {
+            if (!selectedElement || evt.pointerId !== pointerId) return;
+            evt.preventDefault();
+            const mouse = getMousePosition(evt);
+            pending = { x: mouse.x - offset.x, y: mouse.y - offset.y };
+            if (!rafId) rafId = requestAnimationFrame(applyPending);
+        }
+
+        function applyPending() {
+            rafId = null;
+            if (!pending || !selectedElement) return;
+            const newX = pending.x;
+            const newY = pending.y;
+            pending = null;
+
+            const tlist = selectedElement.transform.baseVal;
+            if (tlist.numberOfItems === 0) {
+                const tr = svg.createSVGTransform();
+                tr.setTranslate(newX, newY);
+                tlist.appendItem(tr);
+            } else {
+                tlist.getItem(0).setTranslate(newX, newY);
+            }
+
+            const index = parseInt(selectedElement.dataset.index, 10);
+            const vid = selectedElement.dataset.voltage; // sanitized id
+
+            if (index > 0) {
+                const prevLine = svg.querySelector(`#line-${vid}-${index - 1}`);
+                if (prevLine) {
+                    prevLine.setAttribute('x2', newX);
+                    prevLine.setAttribute('y2', newY);
+                }
+            }
+            const nextLine = svg.querySelector(`#line-${vid}-${index}`);
+            if (nextLine) {
+                nextLine.setAttribute('x1', newX);
+                nextLine.setAttribute('y1', newY);
+            }
+
+            // Expand SVG if dragged far out of bounds so it remains visible, but allow negative positions for overlap
+            try {
+                const wrapper = svg.parentElement; // .svg-wrapper
+                const curWidth = Number(svg.getAttribute('width')) || svg.clientWidth || 800;
+                const curHeight = Number(svg.getAttribute('height')) || svg.clientHeight || 200;
+                const margin = 120;
+                let needResize = false;
+                let newSvgWidth = curWidth;
+                let newSvgHeight = curHeight;
+
+                if (newX + margin > curWidth) {
+                    newSvgWidth = Math.max(Math.ceil(newX + margin), Math.ceil(curWidth * 1.2));
+                    needResize = true;
+                }
+                if (newY + margin > curHeight) {
+                    newSvgHeight = Math.max(Math.ceil(newY + margin), Math.ceil(curHeight * 1.15));
+                    needResize = true;
+                }
+
+                if (needResize) {
+                    svg.setAttribute('width', String(newSvgWidth));
+                    // Do NOT change svg height - allow overflow so rows don't reflow
+                    if (wrapper && wrapper.scrollTo) wrapper.scrollTo({ left: Math.max(newX - 120, 0), top: Math.max(newY - 120, 0), behavior: 'auto' });
+                }
+            } catch (err) {
+                console.warn('Error while expanding SVG:', err);
+            }
+        }
+
+        function onPointerUp(evt) {
+            if (!selectedElement || evt.pointerId !== pointerId) return;
+            try { svg.releasePointerCapture(pointerId); } catch (e) {}
+            pointerId = null;
             selectedElement = null;
+            if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+            pending = null;
         }
     }
 
