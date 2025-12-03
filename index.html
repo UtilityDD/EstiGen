@@ -1142,24 +1142,33 @@
             const pane = document.createElement('div');
             pane.className = 'tab-pane';
             pane.dataset.voltage = voltage;
-            
-            const structureListDiv = document.createElement('div');
-            structureListDiv.className = 'structure-list';
-            pane.appendChild(structureListDiv);
 
-            structures.forEach(structure => {
+            let structureTableRows = '';
+             structures.forEach(structure => {
                 const quantity = estimate.structures[structure.id] || 0;
-                structureListDiv.innerHTML += `
-                    <div class="structure-item" data-id="${structure.id}" onclick="toggleDescription(this)">
-                        <div class="structure-info"> 
-                            <h4>${structure.name}</h4>
-                            <div class="structure-description">
-                                <p>${structure.description || 'No description available.'}</p>
-                            </div>
-                        </div>
-                        <div class="quantity-input"><label for="qty-${structure.id}">Quantity:</label><input type="number" id="qty-${structure.id}" min="0" value="${quantity}" onchange="updateStructureQuantity('${structure.id}', this.value)"></div>
-                    </div>`;
+                structureTableRows += `
+                    <tr>
+                        <td>${structure.id}</td>
+                        <td>${structure.name}</td>
+                        <td><input type="number" id="qty-${structure.id}" min="0" value="${quantity}" onchange="updateStructureQuantity('${structure.id}', this.value)" style="text-align: center;"></td>
+                    </tr>
+                `;
             });
+
+            pane.innerHTML = `
+                <table class="rl-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">Structure Code</th>
+                            <th style="width: 55%;">Structure Name</th>
+                            <th style="width: 20%; text-align: center;">Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${structureTableRows}
+                    </tbody>
+                </table>
+            `;
 
             tabContent.appendChild(pane);
 
