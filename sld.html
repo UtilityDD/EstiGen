@@ -88,6 +88,8 @@
         <button class="btn btn-primary" onclick="saveSldLayout()">Save Layout</button>
         <button class="btn btn-secondary" onclick="resetSldLayout()">Reset Layout</button>
         <button class="btn btn-secondary" id="toggle-labels-btn" onclick="toggleLabels()">Hide Labels</button>
+        <button class="btn btn-secondary" id="download-png-btn" onclick="downloadSldPNG()">Download PNG</button>
+        <button class="btn btn-secondary" id="download-pdf-btn" onclick="downloadSldPDF()">Download PDF</button>
     </div>
     <div id="sld-container">
         <p>Loading diagram...</p>
@@ -95,8 +97,9 @@
 </div>
 
 <script>
+    let estimateData; // Make it globally accessible within the script
     document.addEventListener('DOMContentLoaded', () => {
-        const estimateData = JSON.parse(sessionStorage.getItem('estimateDataForSLD'));
+        estimateData = JSON.parse(sessionStorage.getItem('estimateDataForSLD'));
         const structureLibrary = JSON.parse(sessionStorage.getItem('structureLibraryForSLD'));
 
         if (!estimateData || !structureLibrary) {
@@ -568,6 +571,154 @@
 
         if (button) {
             button.textContent = areLabelsVisible ? 'Hide Labels' : 'Show Labels';
+        }
+    }
+</script>
+<!-- Libraries for exporting SVG to canvas and PDF -->
+<script src="https://cdn.jsdelivr.net/npm/canvg@3.0.7/lib/umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+    async function renderAllSvgsToCanvas() {
+        const svgs = Array.from(document.querySelectorAll('#sld-container svg'));
+        if (!svgs.length) throw new Error('No SVGs found to export');
+
+        // compute visual sizes using bounding rects (includes wrapper spacing)
+        const wrapperRects = svgs.map(s => s.parentElement.getBoundingClientRect());
+        const svgRects = svgs.map(s => s.getBoundingClientRect());
+        const totalHeight = wrapperRects.reduce((sum, r) => sum + r.height, 0);
+        const maxWidth = Math.max(...svgRects.map(r => r.width));
+
+        // Use a fixed DPI for consistent, printable output, rather than screen's devicePixelRatio
+        const print_dpi = 150;
+        const dpr = print_dpi / 96; // 96 is the standard CSS pixel density
+
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.ceil(maxWidth * dpr);
+        canvas.height = Math.ceil(totalHeight * dpr);
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        let yOffset = 0;
+        for (let i = 0; i < svgs.length; i++) {
+            const svg = svgs[i];
+            const svgWidth = svgRects[i].width;
+            const svgHeight = svgRects[i].height;
+
+            // Clone and size the svg string to the measured size
+            const clone = svg.cloneNode(true);
+            clone.setAttribute('width', svgWidth);
+            clone.setAttribute('height', svgHeight);
+            // Inline computed styles for better fidelity
+            // (minimal approach: copy font and fill attributes where necessary could be done later)
+
+            const svgString = new XMLSerializer().serializeToString(clone);
+
+            // Translate context to the yOffset for this svg
+            ctx.save();
+            ctx.translate(0, yOffset);
+            // Render using canvg
+            const v = await window.canvg.Canvg.fromString(ctx, svgString, { ignoreDimensions: false });
+            await v.render();
+            ctx.restore();
+
+            yOffset += wrapperRects[i].height;
+        }
+
+        return canvas;
+    }
+
+    async function downloadSldPNG() {
+        const btn = document.getElementById('download-png-btn');
+        btn.disabled = true;
+        btn.textContent = 'Preparing...';
+        try {
+            const canvas = await renderAllSvgsToCanvas();
+            const dataUrl = canvas.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = 'sld.png';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } catch (err) {
+            console.error('PNG export failed', err);
+            alert('Export failed: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Download PNG';
+        }
+    }
+
+    async function downloadSldPDF() {
+        const btn = document.getElementById('download-pdf-btn');
+        btn.disabled = true;
+        btn.textContent = 'Preparing...';
+        try {
+            const canvas = await renderAllSvgsToCanvas();
+            const dataUrl = canvas.toDataURL('image/png');
+            const { jsPDF } = window.jspdf;
+            
+            // A4 page size in mm: 210 x 297. Use landscape if diagram is wide.
+            const imgWidth = canvas.width;
+            const imgHeight = canvas.height;
+            const orientation = imgWidth > imgHeight ? 'l' : 'p';
+            const pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
+
+            // Get page dimensions in mm
+            const page = pdf.internal.pageSize;
+            const pageWidth = page.getWidth();
+            const pageHeight = page.getHeight();
+            const margin = 10; // 10mm margin
+
+            // --- Add Background Color ---
+            // Use the light-gray from your CSS variables for a consistent look
+            pdf.setFillColor('#ECEFF1'); // var(--light-gray)
+            pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+
+            // --- Add Header ---
+            const projectTitle = estimateData ? estimateData.workName : 'Single Line Diagram';
+            const currentDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+            pdf.setFontSize(16);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor('#004D40'); // var(--secondary-color)
+            pdf.text(projectTitle, margin, margin + 5);
+
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor('#37474F'); // var(--dark-gray)
+            pdf.text(`Date: ${currentDate}`, pageWidth - margin, margin + 5, { align: 'right' });
+
+            // --- Add Image ---
+            const imageYOffset = margin + 15; // Y position for the image after the header
+            const availableWidth = pageWidth - (margin * 2);
+            const availableHeight = pageHeight - imageYOffset - margin;
+
+            // Calculate aspect ratio to fit the image within the available space
+            const imgRatio = imgWidth / imgHeight;
+            let pdfWidth = availableWidth;
+            let pdfHeight = pdfWidth / imgRatio;
+            if (pdfHeight > availableHeight) {
+                pdfHeight = availableHeight;
+                pdfWidth = pdfHeight * imgRatio;
+            }
+
+            // Center the image horizontally and vertically within the available space
+            const imageXOffset = margin + (availableWidth - pdfWidth) / 2;
+            const finalImageY = imageYOffset + (availableHeight - pdfHeight) / 2;
+
+            pdf.addImage(dataUrl, 'PNG', imageXOffset, finalImageY, pdfWidth, pdfHeight);
+            
+            const safeFileName = (projectTitle || 'sld').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            pdf.save(`${safeFileName}.pdf`);
+        } catch (err) {
+            console.error('PDF export failed', err);
+            alert('Export failed: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Download PDF';
         }
     }
 </script>
