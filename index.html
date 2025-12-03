@@ -829,6 +829,7 @@
     const materialsSheetURL = "/data/mat.csv"; // Served via Express from parent data folder
     const labourSheetURL = "/data/lab.csv";     // Served via Express from parent data folder
     const structuresURL = "/data/structure.csv";  // Served via Express from parent data folder
+    const specialStructuresURL = "/data/special_structure.csv"; // New file for special structures
 
     // --- APPLICATION STATE ---
     const estimate = {
@@ -856,9 +857,19 @@
             const rawStructures = await fetchCSV(structuresURL);
             console.log("Raw structures loaded:", rawStructures.length);
             console.log("First raw structure:", rawStructures[0]);
+        try { 
+            // Fetch both standard and special structures
+            const [rawStructures, rawSpecialStructures] = await Promise.all([
+                fetchCSV(structuresURL),
+                fetchCSV(specialStructuresURL)
+            ]);
+            
+            const allRawStructures = [...rawStructures, ...rawSpecialStructures];
+            console.log("Total raw structures loaded:", allRawStructures.length);
 
             // Process raw structures into the format the app expects
             structureLibrary = rawStructures.map(s => {
+            structureLibrary = allRawStructures.map(s => {
                 // Safely get values with fallbacks
                 const materialsStr = s.materials || '';
                 const labourStr = s.labour || '';

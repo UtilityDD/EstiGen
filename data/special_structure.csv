@@ -1,0 +1,4 @@
+id,name,description,voltage,materials,labour
+spec-001,"Railway Crossing Structure","Special steel structure for crossing railway lines, includes extra clearance and safety measures.","Special Structure","10:5;15:20;22:8","5:40;8:25;12:60"
+spec-002,"River Crossing Tower","Tall lattice tower designed for crossing wide rivers, ensuring navigational clearance.","Special Structure","18:12;25:50;30:15","7:150;10:80"
+spec-003,"Highway Gantry Crossing","Gantry-type structure for safely crossing multi-lane highways.","Special Structure","12:8;20:30","6:80;9:40"
