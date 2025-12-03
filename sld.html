@@ -638,7 +638,12 @@
             const dataUrl = canvas.toDataURL('image/png');
             const a = document.createElement('a');
             a.href = dataUrl;
-            a.download = 'sld.png';
+
+            const projectTitle = estimateData ? estimateData.workName : 'sld';
+            const dateForFilename = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+            const safeFileName = projectTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            a.download = `${safeFileName}_${dateForFilename}.png`;
+
             document.body.appendChild(a);
             a.click();
             a.remove();
@@ -711,8 +716,9 @@
 
             pdf.addImage(dataUrl, 'PNG', imageXOffset, finalImageY, pdfWidth, pdfHeight);
             
-            const safeFileName = (projectTitle || 'sld').replace(/[^a-z0-9]/gi, '_').toLowerCase();
-            pdf.save(`${safeFileName}.pdf`);
+            const dateForFilename = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+            const safeProjectTitle = (projectTitle || 'sld').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            pdf.save(`${safeProjectTitle}_${dateForFilename}.pdf`);
         } catch (err) {
             console.error('PDF export failed', err);
             alert('Export failed: ' + err.message);
