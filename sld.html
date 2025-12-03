@@ -415,8 +415,116 @@
             }
         }
 
+        // Reorder nodes within the same voltage row based on their X position
+        function reorderSvgForVoltage(vid) {
+            try {
+                const groups = Array.from(svg.querySelectorAll('.draggable-group')).filter(g => g.dataset.voltage === vid);
+                if (groups.length <= 1) return;
+
+                const getPos = (g) => {
+                    const t = g.transform.baseVal.getItem(0);
+                    return { x: t.matrix.e, y: t.matrix.f };
+                };
+
+                // build array with current positions
+                const arr = groups.map(g => ({ g, x: getPos(g).x }));
+                // sort by x
+                arr.sort((a, b) => a.x - b.x);
+
+                // If order changed, update indices, ids, lines and saved layout
+                let changed = false;
+                for (let i = 0; i < arr.length; i++) {
+                    const g = arr[i].g;
+                    const curIdx = parseInt(g.dataset.index, 10);
+                    if (curIdx !== i) { changed = true; break; }
+                }
+                if (!changed) return;
+
+                // Update group ids and dataset.index
+                const newLayout = JSON.parse(sessionStorage.getItem('sldLayout') || '{}');
+                // Remove existing lines for this vid
+                Array.from(svg.querySelectorAll(`line[id^="line-${vid}-"]`)).forEach(l => l.remove());
+
+                for (let i = 0; i < arr.length; i++) {
+                    const g = arr[i].g;
+                    const pos = getPos(g);
+                    const newId = `group-${vid}-${i}`;
+                    // remove old layout key if present (keys may have old index)
+                    // find and remove any existing keys that refer to this group's old id
+                    Object.keys(newLayout).forEach(k => {
+                        if (k.startsWith(`group-${vid}-`) && newLayout[k] && String(newLayout[k].x) === String(pos.x) && String(newLayout[k].y) === String(pos.y)) {
+                            delete newLayout[k];
+                        }
+                    });
+                    g.id = newId;
+                    g.dataset.index = String(i);
+                    // store new layout
+                    newLayout[newId] = { x: pos.x, y: pos.y };
+                }
+
+                // recreate lines based on new order (lines should be under groups)
+                const NS = 'http://www.w3.org/2000/svg';
+                for (let i = 0; i < arr.length - 1; i++) {
+                    const g1 = arr[i].g;
+                    const g2 = arr[i+1].g;
+                    const p1 = getPos(g1);
+                    const p2 = getPos(g2);
+                    const line = document.createElementNS(NS, 'line');
+                    line.setAttribute('id', `line-${vid}-${i}`);
+                    line.setAttribute('x1', String(p1.x));
+                    line.setAttribute('y1', String(p1.y));
+                    line.setAttribute('x2', String(p2.x));
+                    line.setAttribute('y2', String(p2.y));
+                    line.setAttribute('stroke', '#B0BEC5');
+                    line.setAttribute('stroke-width', '2');
+                    // insert lines at the top so they're beneath groups
+                    svg.insertBefore(line, svg.firstChild);
+                }
+
+                sessionStorage.setItem('sldLayout', JSON.stringify(newLayout));
+            } catch (err) {
+                console.warn('reorderSvgForVoltage error', err);
+            }
+        }
+
         function onPointerUp(evt) {
             if (!selectedElement || evt.pointerId !== pointerId) return;
+            // flush any pending movement first
+            if (pending) {
+                // apply immediately
+                const p = pending;
+                pending = null;
+                const tlist = selectedElement.transform.baseVal;
+                if (tlist.numberOfItems === 0) {
+                    const tr = svg.createSVGTransform();
+                    tr.setTranslate(p.x, p.y);
+                    tlist.appendItem(tr);
+                } else {
+                    tlist.getItem(0).setTranslate(p.x, p.y);
+                }
+                // update adjacent lines once
+                const idx = parseInt(selectedElement.dataset.index, 10);
+                const vid = selectedElement.dataset.voltage;
+                const prevL = svg.querySelector(`#line-${vid}-${idx - 1}`);
+                if (prevL) {
+                    prevL.setAttribute('x2', String(p.x));
+                    prevL.setAttribute('y2', String(p.y));
+                }
+                const nextL = svg.querySelector(`#line-${vid}-${idx}`);
+                if (nextL) {
+                    nextL.setAttribute('x1', String(p.x));
+                    nextL.setAttribute('y1', String(p.y));
+                }
+            }
+
+            // reorder nodes if needed based on final X positions
+            try {
+                const vidFinal = selectedElement.dataset.voltage;
+                reorderSvgForVoltage(vidFinal);
+            } catch (e) {
+                console.warn('Error reordering on pointer up', e);
+            }
+
             try { svg.releasePointerCapture(pointerId); } catch (e) {}
             pointerId = null;
             selectedElement = null;
