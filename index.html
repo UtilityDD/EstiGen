@@ -1003,9 +1003,6 @@
     // --- STEP 1: WORK CATEGORY ---
     document.getElementById('work-category-cards').addEventListener('click', (e) => {
         if (e.target.classList.contains('card')) {
-            // Remove 'selected' from any other card and add it to the clicked one
-            document.querySelectorAll('#work-category-cards .card').forEach(c => c.classList.remove('selected'));
-            e.target.classList.add('selected');
             estimate.workCategory = e.target.dataset.value;
             goToStep(2);
         }
@@ -1231,43 +1228,65 @@
 
     // --- STEP 5: ESTIMATE GENERATION ---
     async function generateEstimate() {
-        // Show loader and hide previous output
-        document.getElementById('loader').style.display = 'block';
-        document.getElementById('estimate-output').style.display = 'none';
-        document.getElementById('export-buttons').style.display = 'none';
-
         try {
-            // 1. Prepare the data to send to the server.
-            // This includes the structures and their quantities.
-            const payload = {
-                structures: estimate.structures,
-                structureLibrary: structureLibrary // Send the library for the server to do lookups
-            };
+            // 1. Fetch data
+            const [materialMaster, labourMaster] = await Promise.all([
+                fetchCSV(materialsSheetURL),
+                fetchCSV(labourSheetURL)
+            ]);
 
-            // 2. Call the secure API endpoint to do the heavy lifting.
-            // This endpoint should be set up on your server (e.g., using Node.js/Express).
-            const response = await fetch('/api/generate-estimate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            // 2. Process BOQ
+            const consolidatedMaterials = {};
+            const consolidatedLabour = {};
+            const missingItems = [];
 
-            const responseText = await response.text();
+            for (const structureId in estimate.structures) {
+                const quantity = estimate.structures[structureId];
+                const structure = structureLibrary.find(s => s.id === structureId);
 
-            if (!response.ok) {
-                // Try to parse as JSON, but fall back to the raw text if it fails.
-                let errorMessage = 'Server returned an error during estimate generation.';
-                try {
-                    const errorResult = JSON.parse(responseText);
-                    errorMessage = errorResult.message || errorMessage;
-                } catch (e) {
-                    errorMessage = responseText || `Server error: ${response.status} ${response.statusText}`;
-                }
-                throw new Error(errorMessage);
+                // Process materials
+                structure.materials.forEach(item => {
+                    const masterItem = materialMaster.find(m => parseInt(m.mat_sl, 10) === item.index);
+                    if (!masterItem) {
+                        missingItems.push(`Material at index ${item.index} for structure '${structure.name}' not found in master sheet.`);
+                        return;
+                    }                    
+                    const itemCode = masterItem['Materials Code']; // This is the value from the first column, used as the unique key.
+
+                    if (!consolidatedMaterials[itemCode]) {
+                        consolidatedMaterials[itemCode] = {
+                            code: itemCode, // The code to display is the key itself.
+                            name: masterItem['Description'],
+                            unit: masterItem['Unit'],
+                            rate: parseFloat(masterItem['Rate(Rs)']),
+                            totalQty: 0
+                        };
+                    }
+                    consolidatedMaterials[itemCode].totalQty += item.qty * quantity;
+                });
+
+                // Process labour
+                structure.labour.forEach(item => {
+                    const masterItem = labourMaster.find(l => parseInt(l.lab_sl, 10) === item.index);
+                     if (!masterItem) {
+                        missingItems.push(`Labour item at index ${item.index} for structure '${structure.name}' not found in master sheet.`);
+                        return;
+                    }
+                    const itemCode = masterItem['lab_sl']; // Use lab_sl as the unique key
+                    if (!consolidatedLabour[itemCode]) {
+                        consolidatedLabour[itemCode] = {
+                            name: masterItem['Description'],
+                            unit: masterItem['Unit'],
+                            rate: parseFloat(masterItem['Rate (Rs)']),
+                            totalQty: 0
+                        };
+                    }
+                    consolidatedLabour[itemCode].totalQty += item.qty * quantity;
+                });
             }
-            const result = JSON.parse(responseText);
-            // 3. Render the output using the data calculated and returned by the server.
-            renderOutput(result.materials, result.labour, result.missingItems);
+
+            // 3. Render Output
+            renderOutput(consolidatedMaterials, consolidatedLabour, missingItems);
 
         } catch (error) {
             console.error("Failed to generate estimate:", error);
