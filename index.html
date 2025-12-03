@@ -818,6 +818,7 @@
         <div id="export-buttons" class="export-buttons" style="display: none;">
              <button class="btn btn-secondary" onclick="goToStep(1)">Start New Estimate</button>
              <button class="btn btn-secondary" onclick="goToStep(4.5)">Back to Edit</button>
+             <button class="btn btn-primary" onclick="openSldPage()">View Full SLD</button>
              <button class="btn btn-primary" onclick="window.print()">Print / Save as PDF</button>
         </div>
     </div>
@@ -1297,6 +1298,10 @@
         }
     }
 
+    function openSldPage() {
+        window.open('sld.html', '_blank');
+    }
+
     function renderOutput(materials, labour, missingItems) {
         estimate.estimateId = `EST-${Date.now()}`;
         const outputContainer = document.getElementById('estimate-output');
@@ -1306,6 +1311,10 @@
 
         const formatCurrency = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(num);
         const currentDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+        // Save data to session storage for the SLD page
+        sessionStorage.setItem('estimateDataForSLD', JSON.stringify(estimate));
+        sessionStorage.setItem('structureLibraryForSLD', JSON.stringify(structureLibrary));
 
         // Print header template for each page
         const printHeader = `
@@ -1426,7 +1435,7 @@
 
             <div class="estimate-summary">
                 ${printHeader}
-                <h3>📦 Material Schedule</h3>
+                <h3> Material Schedule</h3>
                 <table class="estimate-table">
                     <thead>
                         <tr>

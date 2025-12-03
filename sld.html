@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Single Line Diagram</title>
+    <style>
+        :root {
+            --primary-color: #00796B; /* Teal */
+            --secondary-color: #004D40; /* Darker Teal */
+            --accent-color: #FFAB40; /* Amber */
+            --light-gray: #ECEFF1; /* Blue Grey 50 */
+            --medium-gray: #B0BEC5; /* Blue Grey 200 */
+            --dark-gray: #37474F; /* Blue Grey 800 */
+            --white: #ffffff;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--light-gray);
+            margin: 0;
+            padding: 2rem;
+            color: var(--dark-gray);
+        }
+        .header {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 1rem 2rem;
+            border-radius: 8px 8px 0 0;
+        }
+        .header h1 { margin: 0; }
+        .sld-canvas {
+            background-color: var(--white);
+            padding: 2rem;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        #sld-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            padding: 1rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: 8px;
+            background-color: #fdfdfd;
+            overflow: auto; /* Ensure container itself can scroll if needed */
+        }
+        .sld-voltage-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding-bottom: 1rem; /* Add padding for scrollbar visibility */
+        }
+        .sld-voltage-label {
+            font-weight: 600;
+            color: var(--secondary-color);
+            width: 100px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+        .svg-wrapper {
+            overflow-x: auto; /* Enable horizontal scrolling for the SVG */
+            padding-bottom: 10px; /* Space for scrollbar */
+        }
+        .draggable-group {
+            cursor: move; /* Change cursor to indicate draggability */
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1 id="sld-title">Single Line Diagram</h1>
+</div>
+<div class="sld-canvas">
+    <div id="sld-container">
+        <p>Loading diagram...</p>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const estimateData = JSON.parse(sessionStorage.getItem('estimateDataForSLD'));
+        const structureLibrary = JSON.parse(sessionStorage.getItem('structureLibraryForSLD'));
+
+        if (!estimateData || !structureLibrary) {
+            document.getElementById('sld-container').innerHTML = '<p>Error: Estimate data not found. Please generate an estimate first.</p>';
+            return;
+        }
+
+        document.getElementById('sld-title').textContent = `SLD for: ${estimateData.workName}`;
+        renderSingleLineDiagram('sld-container', estimateData, structureLibrary);
+    }); 
+
+    function renderSingleLineDiagram(containerId, estimate, structureLibrary) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
+
+        const iconMap = {
+            '33 kV': (x, y) => `<rect x="${x-8}" y="${y-8}" width="16" height="16" fill="#00796B" />`,
+            '11 kV': (x, y) => `<circle cx="${x}" cy="${y}" r="8" fill="#FFAB40" />`,
+            'DTR': (x, y) => `<polygon points="${x},${y-9} ${x-9},${y+6} ${x+9},${y+6}" fill="#F44336" />`,
+            'LT 3-Ph': (x, y) => `<rect x="${x-6}" y="${y-6}" width="12" height="12" transform="rotate(45 ${x} ${y})" fill="#37474F" />`,
+            'LT 1-Ph': (x, y) => `<circle cx="${x}" cy="${y}" r="6" fill="#B0BEC5" />`,
+            'Special Structure': (x, y) => `<polygon points="${x},${y-10} ${x+3},${y-3} ${x+10},${y-2} ${x+4},${y+4} ${x+6},${y+10} ${x},${y+7} ${x-6},${y+10} ${x-4},${y+4} ${x-10},${y-2} ${x-3},${y-3}" fill="#673AB7" />`,
+            'default': (x, y) => `<circle cx="${x}" cy="${y}" r="7" fill="#777" />`
+        };
+
+        const structuresByVoltage = {};
+        function sanitizeId(str) {
+            return String(str).replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-]/g, '');
+        }
+
+        for (const voltage of estimate.voltageLevels) {
+            structuresByVoltage[voltage] = [];
+        }
+
+        for (const structureId in estimate.structures) {
+            const quantity = estimate.structures[structureId];
+            const structure = structureLibrary.find(s => s.id === structureId);
+            if (structure) {
+                const relevantVoltage = estimate.voltageLevels.find(v => structure.voltage.includes(v));
+                if (relevantVoltage) {
+                    for (let i = 0; i < quantity; i++) {
+                        structuresByVoltage[relevantVoltage].push(structure);
+                    }
+                }
+            }
+        }
+
+        for (const voltage of estimate.voltageLevels) {
+            const structures = structuresByVoltage[voltage];
+            if (structures.length === 0) continue;
+
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'sld-voltage-group';
+
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'sld-voltage-label';
+            labelDiv.textContent = voltage;
+            groupDiv.appendChild(labelDiv);
+
+            const svgWidth = (structures.length * 80) + 40;
+            const svgHeight = 200; // Increased height for more dragging room
+
+            let svgContent = `<svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">`;
+            
+            // Draw line segments between nodes first
+            structures.forEach((s, i) => {
+                if (i < structures.length - 1) {
+                    const x1 = 40 + (i * 80);
+                    const y1 = svgHeight / 2;
+                    const x2 = 40 + ((i + 1) * 80);
+                    const y2 = svgHeight / 2;
+                    const vid = sanitizeId(voltage);
+                    svgContent += `<line id="line-${vid}-${i}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#B0BEC5" stroke-width="2" />`;
+                }
+            });
+
+            // Draw the structure icons on top of the lines
+            structures.forEach((s, i) => {
+                const x = 40 + (i * 80);
+                const y = svgHeight / 2;
+                const iconFunc = iconMap[voltage] || iconMap['default'];
+
+                // Determine rotation for angle/tangent structures
+                let rotation = 0;
+                const lowerCaseName = s.name.toLowerCase();
+                if (lowerCaseName.includes('angle')) {
+                    rotation = 30;
+                } else if (lowerCaseName.includes('tangent')) {
+                    rotation = 15;
+                }
+                const rotationTransform = rotation > 0 ? `rotate(${rotation})` : '';
+
+                // Add a class for dragging and a unique ID
+                const vid = sanitizeId(voltage);
+                svgContent += `<g class="draggable-group" id="group-${vid}-${i}" data-index="${i}" data-voltage="${vid}" data-voltage-raw="${voltage}" transform="translate(${x}, ${y})">`;
+                svgContent += `<g class="icon-wrapper" transform="${rotationTransform}">${iconFunc(0, 0)}</g>`;
+                svgContent += `<text x="0" y="-20" font-size="10" text-anchor="middle" fill="#333" style="pointer-events: none;">${s.id}</text>`;
+                svgContent += `</g>`;
+            });
+
+            svgContent += `</svg>`;
+            
+            const svgContainer = document.createElement('div');
+            svgContainer.className = 'svg-wrapper';
+            svgContainer.innerHTML = svgContent;
+            groupDiv.appendChild(svgContainer);
+
+            container.appendChild(groupDiv);
+
+            // Make the SVG elements draggable after they are in the DOM
+            const svgElement = svgContainer.querySelector('svg');
+            makeDraggable(svgElement);
+        }
+    }
+
+    function makeDraggable(svg) {
+        let selectedElement = null;
+        let offset;
+        svg.addEventListener('mousedown', startDrag);
+        svg.addEventListener('mousemove', drag);
+        svg.addEventListener('mouseup', endDrag);
+        svg.addEventListener('mouseleave', endDrag); // Stop dragging if mouse leaves SVG
+
+        function getMousePosition(evt) {
+            const CTM = svg.getScreenCTM();
+            const e = CTM ? CTM.e : 0;
+            const f = CTM ? CTM.f : 0;
+            const a = CTM ? CTM.a : 1;
+            const d = CTM ? CTM.d : 1;
+            return {
+                x: (evt.clientX - e) / a,
+                y: (evt.clientY - f) / d,
+            };
+        }
+
+        function startDrag(evt) {
+            // Find the closest parent group that is draggable
+            const targetGroup = evt.target.closest('.draggable-group');
+            if (targetGroup) {
+                selectedElement = targetGroup;
+                offset = getMousePosition(evt);
+                // Ensure a translate transform exists and get its matrix
+                const tlist = selectedElement.transform.baseVal;
+                let transform;
+                if (tlist.numberOfItems === 0) {
+                    transform = svg.createSVGTransform();
+                    transform.setTranslate(0, 0);
+                    tlist.appendItem(transform);
+                }
+                transform = tlist.getItem(0);
+                offset.x -= transform.matrix.e;
+                offset.y -= transform.matrix.f;
+            }
+        }
+
+        function drag(evt) {
+            if (selectedElement) {
+                evt.preventDefault();
+                const mousePos = getMousePosition(evt);
+                const newX = mousePos.x - offset.x;
+                const newY = mousePos.y - offset.y;
+                const tlist = selectedElement.transform.baseVal;
+                if (tlist.numberOfItems === 0) {
+                    const tr = svg.createSVGTransform();
+                    tr.setTranslate(newX, newY);
+                    tlist.appendItem(tr);
+                } else {
+                    tlist.getItem(0).setTranslate(newX, newY);
+                }
+
+                const index = parseInt(selectedElement.dataset.index, 10);
+                const vid = selectedElement.dataset.voltage; // sanitized id
+
+                // Update the line segment connecting to the previous node
+                if (index > 0) {
+                    const prevLine = svg.querySelector(`#line-${vid}-${index - 1}`);
+                    if (prevLine) {
+                        prevLine.setAttribute('x2', newX);
+                        prevLine.setAttribute('y2', newY);
+                    }
+                }
+                // Update the line segment connecting to the next node
+                const nextLine = svg.querySelector(`#line-${vid}-${index}`);
+                if (nextLine) {
+                    nextLine.setAttribute('x1', newX);
+                    nextLine.setAttribute('y1', newY);
+                }
+            }
+        }
+
+        function endDrag() {
+            selectedElement = null;
+        }
+    }
+</script>
+</body>
+</html>
