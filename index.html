@@ -853,22 +853,17 @@
 
     // --- INITIALIZATION ---
     document.addEventListener('DOMContentLoaded', async () => {
-        try {
-            const rawStructures = await fetchCSV(structuresURL);
-            console.log("Raw structures loaded:", rawStructures.length);
-            console.log("First raw structure:", rawStructures[0]);
         try { 
             // Fetch both standard and special structures
             const [rawStructures, rawSpecialStructures] = await Promise.all([
                 fetchCSV(structuresURL),
                 fetchCSV(specialStructuresURL)
             ]);
-            
+
             const allRawStructures = [...rawStructures, ...rawSpecialStructures];
             console.log("Total raw structures loaded:", allRawStructures.length);
 
             // Process raw structures into the format the app expects
-            structureLibrary = rawStructures.map(s => {
             structureLibrary = allRawStructures.map(s => {
                 // Safely get values with fallbacks
                 const materialsStr = s.materials || '';
@@ -911,35 +906,6 @@
                     labour: labour
                 };
             });
-
-            // Add demo special structures programmatically
-            const demoSpecialStructures = [
-                {
-                    id: 'spec-001',
-                    name: 'Railway Crossing Structure',
-                    description: 'Special steel structure for crossing railway lines, includes extra clearance and safety measures.',
-                    voltage: ['Special Structure'],
-                    materials: [{ index: 10, qty: 5 }, { index: 15, qty: 20 }, { index: 22, qty: 8 }], // Example material indices
-                    labour: [{ index: 5, qty: 40 }, { index: 8, qty: 25 }, { index: 12, qty: 60 }] // Example labour indices
-                },
-                {
-                    id: 'spec-002',
-                    name: 'River Crossing Tower',
-                    description: 'Tall lattice tower designed for crossing wide rivers, ensuring navigational clearance.',
-                    voltage: ['Special Structure'],
-                    materials: [{ index: 18, qty: 12 }, { index: 25, qty: 50 }, { index: 30, qty: 15 }],
-                    labour: [{ index: 7, qty: 150 }, { index: 10, qty: 80 }]
-                },
-                {
-                    id: 'spec-003',
-                    name: 'Highway Gantry Crossing',
-                    description: 'Gantry-type structure for safely crossing multi-lane highways.',
-                    voltage: ['Special Structure'],
-                    materials: [{ index: 12, qty: 8 }, { index: 20, qty: 30 }],
-                    labour: [{ index: 6, qty: 80 }, { index: 9, qty: 40 }]
-                }
-            ];
-            structureLibrary.push(...demoSpecialStructures);
 
             // Sort the library by name
             structureLibrary.sort((a, b) => a.name.localeCompare(b.name));
