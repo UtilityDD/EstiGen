@@ -705,7 +705,8 @@
             <div class="card" data-value="33 kV">33 kV</div>
             <div class="card" data-value="11 kV">11 kV</div>
             <div class="card" data-value="DTR">DTR</div>
-            <div class="card" data-value="LT">LT</div>
+            <div class="card" data-value="LT 3-Ph">LT 3-Ph</div>
+            <div class="card" data-value="LT 1-Ph">LT 1-Ph</div>
             <div class="card" data-value="Special Structure">Special Structure</div>
         </div>
         <div class="button-group">
@@ -825,9 +826,9 @@
 <script>
     // --- DATA SOURCES ---
     let structureLibrary = []; // Will be populated from the server
-    const materialsSheetURL = "/data/mat.csv"; // Path to local CSV
-    const labourSheetURL = "/data/lab.csv";     // Path to local CSV
-    const structuresURL = "/data/structure.csv";  // Path to local CSV
+    const materialsSheetURL = "/data/mat.csv"; // Served via Express from parent data folder
+    const labourSheetURL = "/data/lab.csv";     // Served via Express from parent data folder
+    const structuresURL = "/data/structure.csv";  // Served via Express from parent data folder
 
     // --- APPLICATION STATE ---
     const estimate = {
@@ -1061,7 +1062,7 @@
         tabContent.className = 'tab-content';
 
         // --- Create R/L (Route Length) Tab ---
-        const applicableRLVoltages = ['33 kV', '11 kV', 'LT'];
+        const applicableRLVoltages = ['33 kV', '11 kV', 'LT 3-Ph', 'LT 1-Ph'];
         const rlVoltagesToShow = estimate.voltageLevels.filter(v => applicableRLVoltages.includes(v));
 
         if (rlVoltagesToShow.length > 0) {

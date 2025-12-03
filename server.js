@@ -8,9 +8,11 @@ const PORT = process.env.PORT || 3000;
 // Middleware to parse JSON bodies and serve static files
 app.use(express.json());
 app.use(express.static(__dirname));
+// Serve the data folder from parent directory
+app.use('/data', express.static(path.join(__dirname, '..', 'data')));
 
 // --- File Paths ---
-const STRUCTURE_FILE = path.join(__dirname, 'data', 'structure.csv');
+const STRUCTURE_FILE = path.join(__dirname, '..', 'data', 'structure.csv');
 
 // --- CSV Parser Utility ---
 function parseCSV(text) {
