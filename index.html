@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EstiGen: Estimate Made Easy</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 
 <body>
@@ -160,7 +161,8 @@
                 <button class="btn btn-secondary" onclick="goToStep(1)">Start New Estimate</button>
                 <button class="btn btn-secondary" onclick="goToStep(4.5)">Back to Edit</button>
                 <button class="btn btn-primary" onclick="openSldPage()">View Full SLD</button>
-                <button class="btn btn-primary" onclick="window.print()">Print / Save as PDF</button>
+                <button class="btn btn-primary" onclick="downloadEstimatePDF()">📥 Download PDF</button>
+                <button class="btn btn-secondary" onclick="window.print()">🖨️ Print</button>
             </div>
         </div>
     </div>

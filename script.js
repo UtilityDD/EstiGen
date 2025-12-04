@@ -121,11 +121,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error("Failed to load structure library from API:", error.message);
         alert("Error: Could not load the core structure data from the server. The application may not function correctly.");
     }
+
+    // --- STEP 1: WORK CATEGORY ---
+    document.getElementById('work-category-cards').addEventListener('click', (e) => {
+        if (e.target.classList.contains('card')) {
+            estimate.workCategory = e.target.dataset.value;
+            goToStep(2);
+        }
+    });
+
+    // --- STEP 2: VOLTAGE LEVELS ---
+    document.getElementById('voltage-cards').addEventListener('click', (e) => {
+        if (e.target.classList.contains('card')) {
+            const card = e.target;
+            const value = card.dataset.value;
+            card.classList.toggle('selected');
+            if (estimate.voltageLevels.includes(value)) {
+                estimate.voltageLevels = estimate.voltageLevels.filter(v => v !== value);
+            } else {
+                estimate.voltageLevels.push(value);
+            }
+        }
+    });
 });
-
-// Styles for collapsible structure descriptions (already present in CSS, no change needed here)
-
-
 
 // --- UI NAVIGATION ---
 let currentStep = 1;
@@ -204,27 +222,6 @@ function resetEstimate() {
     document.getElementById('loader').style.display = 'block';
 }
 
-// --- STEP 1: WORK CATEGORY ---
-document.getElementById('work-category-cards').addEventListener('click', (e) => {
-    if (e.target.classList.contains('card')) {
-        estimate.workCategory = e.target.dataset.value;
-        goToStep(2);
-    }
-});
-
-// --- STEP 2: VOLTAGE LEVELS ---
-document.getElementById('voltage-cards').addEventListener('click', (e) => {
-    if (e.target.classList.contains('card')) {
-        const card = e.target;
-        const value = card.dataset.value;
-        card.classList.toggle('selected');
-        if (estimate.voltageLevels.includes(value)) {
-            estimate.voltageLevels = estimate.voltageLevels.filter(v => v !== value);
-        } else {
-            estimate.voltageLevels.push(value);
-        }
-    }
-});
 
 // --- STEP 3: STRUCTURES ---
 function renderStructureList() {
@@ -500,6 +497,43 @@ async function generateEstimate() {
 
 function openSldPage() {
     window.open('sld.html', '_blank');
+}
+
+// Function to download estimate as PDF using html2pdf.js
+function downloadEstimatePDF() {
+    const element = document.getElementById('estimate-output');
+
+    // Create a filename based on work name and estimate ID
+    const sanitizedWorkName = estimate.workName.replace(/[^a-z0-9]/gi, '_');
+    const filename = `${sanitizedWorkName}_${estimate.estimateId}.pdf`;
+
+    // Configure PDF options
+    const options = {
+        margin: [10, 10, 15, 10], // top, left, bottom, right in mm
+        filename: filename,
+        image: {
+            type: 'jpeg',
+            quality: 0.98
+        },
+        html2canvas: {
+            scale: 2,  // Higher scale for better quality
+            useCORS: true,
+            letterRendering: true,
+            logging: false
+        },
+        jsPDF: {
+            unit: 'mm',
+            format: 'a4',
+            orientation: 'portrait'
+        },
+        pagebreak: {
+            mode: ['avoid-all', 'css', 'legacy'],
+            before: '.estimate-totals'  // Force page break before Cost Summary
+        }
+    };
+
+    // Generate and download the PDF
+    html2pdf().set(options).from(element).save();
 }
 
 function renderOutput(materials, labour, missingItems) {
