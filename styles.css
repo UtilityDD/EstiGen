@@ -1,0 +1,672 @@
+        :root {
+            --primary-color: #00796B; /* Teal */
+            --secondary-color: #004D40; /* Darker Teal */
+            --accent-color: #FFAB40; /* Amber */
+            --light-gray: #ECEFF1; /* Blue Grey 50 */
+            --medium-gray: #B0BEC5; /* Blue Grey 200 */
+            --dark-gray: #37474F; /* Blue Grey 800 */
+            --white: #ffffff;
+            --success-color: #4CAF50; /* Green */
+            --error-color: #F44336; /* Red */
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--light-gray);
+            margin: 0;
+            padding: 2rem;
+            color: var(--dark-gray);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.75rem;
+        }
+        .header a {
+            color: var(--white);
+            text-decoration: none;
+            font-weight: 600;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .header a:hover {
+            opacity: 1;
+        }
+
+        .step {
+            display: none;
+            padding: 2rem;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--secondary-color);
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .card-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .card {
+            background: var(--white);
+            border: 1px solid var(--medium-gray);
+            border-radius: 8px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 90, 156, 0.15);
+            border-color: var(--primary-color);
+        }
+
+        .card.selected {
+            background-color: var(--primary-color);
+            color: var(--white);
+            border-color: var(--primary-color);
+        }
+
+        .structure-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .structure-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 1rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: 8px;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .structure-info {
+            flex-grow: 1;
+        }
+
+        .structure-info h4 {
+            margin: 0 0 0.25rem 0;
+            font-size: 1.1rem;
+            color: var(--secondary-color);
+        }
+
+        .structure-info p {
+            margin: 0; 
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .structure-description {
+            display: none; /* Hidden by default */
+            padding-top: 0.5rem;
+            font-size: 0.9rem; 
+            color: #666;
+        }
+
+        .structure-item.expanded .structure-description {
+            display: block; /* Shown when parent is expanded */
+        }
+ 
+        .quantity-input {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .quantity-input label {
+            font-weight: 600;
+        }
+
+        .quantity-input input {
+            width: 70px;
+            padding: 0.4rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: 4px;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        /* Tab view styles */
+        .tab-container {
+            width: 100%;
+        }
+
+        .tab-buttons {
+            display: flex;
+            border-bottom: 2px solid var(--medium-gray);
+            margin-bottom: 1.5rem;
+        }
+
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--dark-gray);
+            border-bottom: 3px solid transparent;
+            transition: color 0.2s, border-color 0.2s;
+            margin-bottom: -2px; /* Align with the container's bottom border */
+        }
+
+        .tab-button.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            font-size: 1rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .radio-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .radio-group div {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .radio-group input[type="radio"] {
+            width: auto;
+            margin-right: 0.5rem;
+        }
+
+        /* New styles for the additional costs table */
+        .additional-costs-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .additional-costs-table th, .additional-costs-table td {
+            border: 1px solid var(--medium-gray);
+            padding: 0.75rem 1rem;
+            text-align: left;
+            vertical-align: top;
+        }
+        .additional-costs-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        .additional-costs-table td:nth-child(1) {
+            font-weight: 600;
+            width: 25%;
+        }
+        .additional-costs-table td:nth-child(2) {
+            width: 20%;
+        }
+        .additional-costs-table .radio-group label {
+            display: inline;
+            margin: 0;
+        }
+
+        /* R/L Table styles */
+        .rl-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .rl-table th, .rl-table td {
+            border: 1px solid var(--medium-gray);
+            padding: 0.75rem;
+            text-align: left;
+        }
+        .rl-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        .rl-table input, .rl-table select { width: 100%; padding: 0.5rem; box-sizing: border-box; }
+        .rl-table td:first-child { font-weight: 600; width: 20%; }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-secondary {
+            background-color: var(--medium-gray);
+            color: var(--dark-gray);
+        }
+
+        .btn-secondary:hover {
+            background-color: #ccc;
+        }
+
+        #estimate-output {
+            padding: 1.5rem 2rem;
+        }
+
+        .estimate-header, .estimate-summary, .estimate-totals {
+            margin-bottom: 2rem;
+        }
+
+        .estimate-header h2 {
+            text-align: left;
+            color: var(--secondary-color);
+            margin-bottom: 0.5rem;
+            font-size: 1.75rem;
+        }
+
+        .header-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .header-details p {
+            font-size: 0.9rem;
+            margin: 0.25rem 0;
+        }
+
+        .header-details strong {
+            color: var(--secondary-color);
+        }
+
+        /* Print Header - appears on each page */
+        .print-header {
+            display: none;
+        }
+
+        .estimate-summary h3, .estimate-totals h3 {
+            color: var(--secondary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .estimate-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-family); /* Apply consistent font */
+            margin-top: 0.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .estimate-table th, .estimate-table td {
+            border: 1px solid var(--medium-gray);
+            padding: 0.6rem 0.75rem;
+            text-align: left;
+        }
+
+        .estimate-table th {
+            background-color: #f8f9fa;
+            color: var(--secondary-color);
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .estimate-table tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .estimate-table tbody tr:hover {
+            background-color: #e3f2fd;
+        }
+
+        .estimate-table tfoot td {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+
+        /* Right-align numeric columns */
+        .estimate-table td:nth-child(5),
+        .estimate-table td:nth-child(6),
+        .estimate-table td:nth-child(7) {
+            text-align: right;
+        }
+
+        .totals-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-family); /* Apply consistent font */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .totals-table td {
+            padding: 0.65rem 1rem;
+            border: 1px solid var(--medium-gray);
+        }
+
+        .totals-table tr:nth-child(odd) {
+            background-color: #f8f9fa;
+        }
+
+        .totals-table td:first-child {
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+
+        .totals-table tr:last-child {
+            font-size: 1.2rem;
+            font-weight: bold;
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .totals-table td:last-child {
+            text-align: right;
+        }
+
+        .loader {
+            text-align: center;
+            padding: 3rem;
+        }
+
+        .loader p {
+            font-size: 1.2rem;
+            color: var(--secondary-color);
+        }
+
+        .spinner {
+            border: 4px solid var(--light-gray);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background-color: #ffeff0;
+            color: var(--error-color);
+            border: 1px solid var(--error-color);
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 1.5rem;
+        }
+
+        .export-buttons {
+            text-align: center;
+            padding: 1rem 2rem 2rem;
+            background: var(--light-gray);
+            border-top: 1px solid var(--medium-gray);
+        }
+
+        @media print {
+            @page {
+                size: A4;
+                margin: 15mm 10mm 20mm 10mm;
+            }
+            
+            body {
+                padding: 0;
+                background-color: var(--white);
+                font-size: 10pt;
+            }
+            
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 100%;
+            }
+            
+            .header, .export-buttons, .button-group, #loader, .error-message {
+                display: none !important;
+            }
+            
+            .step {
+                display: none !important;
+            }
+            
+            #step-5 {
+                display: block !important;
+            }
+            
+            #estimate-output {
+                display: block !important;
+                padding: 0;
+            }
+
+            /* Print header that appears on each page */
+            .print-header {
+                display: block !important;
+                background: none !important;
+                color: black !important;
+                padding: 12px 15px;
+                margin-bottom: 15px;
+                border: 1px solid #333;
+            }
+            
+            .print-header-content {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+            
+            .print-header h3 {
+                margin: 0;
+                font-size: 14pt;
+                font-weight: 600;
+            }
+            
+            .print-header-info {
+                display: flex;
+                gap: 20px;
+                font-size: 9pt;
+            }
+            
+            .print-header-info span {
+                white-space: nowrap;
+            }
+
+            /* Hide the screen header on print */
+            .estimate-header {
+                display: none !important;
+            }
+            
+            .header-details {
+                background: none !important;
+                border-left: 3px solid #333 !important;
+                padding: 8px 12px;
+            }
+
+            /* Section styling */
+            .estimate-summary, .estimate-totals {
+                margin-bottom: 0;
+            }
+            
+            .estimate-summary h3, .estimate-totals h3 {
+                color: #000 !important;
+                font-size: 12pt;
+                border-bottom: 2px solid #333;
+                padding-bottom: 5px;
+                margin-top: 0;
+                margin-bottom: 10px;
+            }
+
+            /* Table styling for print */
+            .estimate-table {
+                font-size: 9pt;
+                box-shadow: none;
+                border: 1px solid #ccc;
+            }
+            
+            .estimate-table th {
+                background: #e0e0e0 !important; /* Light gray for header */
+                color: black !important;
+                padding: 8px 6px;
+                font-size: 8pt;
+            }
+            
+            .estimate-table td {
+                padding: 6px;
+                border-color: #ddd;
+            }
+            
+            .estimate-table tbody tr:nth-child(even) {
+                background-color: transparent !important;
+            }
+
+            /* Add serial number column styling */
+            .estimate-table th:first-child,
+            .estimate-table td:first-child {
+                width: auto;
+            }
+
+            /* Totals table styling */
+            .totals-table {
+                font-size: 9pt;
+                box-shadow: none;
+            }
+            
+            .totals-table td {
+                padding: 6px 10px;
+            }
+            
+            .totals-table tr:nth-child(odd) {
+                background-color: #f5f5f5 !important; /* Keep light striping for readability */
+            }
+            
+            .totals-table tr:last-child {
+                background: none !important;
+                color: black !important;
+            }
+            
+            .estimate-summary:first-of-type {
+                page-break-before: avoid;
+            }
+            
+            .estimate-totals {
+                page-break-before: always;
+                padding-top: 10px;
+            }
+
+            .totals-in-words {
+                text-align: center;
+                font-style: italic;
+                margin-top: 1rem;
+                padding: 0.25rem;
+                background: none !important;
+                border: 1px solid #ccc;
+            }
+            
+            /* Prevent breaking inside tables */
+            .estimate-table {
+                page-break-inside: auto;
+            }
+            
+            .estimate-table thead {
+                display: table-header-group;
+            }
+            
+            .estimate-table tr {
+                page-break-inside: avoid;
+            }
+            
+            .totals-table {
+                page-break-inside: avoid;
+            }
+        }
+        
+        .signatures {
+            margin-top: 3rem;
+            display: flex;
+            justify-content: space-between;
+            padding: 1.5rem 1rem 0;
+            border-top: 1px solid var(--medium-gray);
+        }
+        .signatures div {
+            text-align: center;
+            width: 45%;
+            font-size: 0.9rem;
+        }
