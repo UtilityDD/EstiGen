@@ -827,10 +827,6 @@
 <script>
     // --- DATA SOURCES ---
     let structureLibrary = []; // Will be populated from the server
-    const materialsSheetURL = "/data/mat.csv"; // Served via Express from parent data folder
-    const labourSheetURL = "/data/lab.csv";     // Served via Express from parent data folder
-    const structuresURL = "/data/structure.csv";  // Served via Express from parent data folder
-    const specialStructuresURL = "/data/special_structure.csv"; // New file for special structures
 
     // --- APPLICATION STATE ---
     const estimate = {
@@ -854,24 +850,62 @@
 
     // --- INITIALIZATION ---
     document.addEventListener('DOMContentLoaded', async () => {
-        try { 
-            // Fetch both standard and special structures
-            const [rawStructures, rawSpecialStructures] = await Promise.all([
-                fetchCSV(structuresURL),
-                fetchCSV(specialStructuresURL)
-            ]);
-
-            const allRawStructures = [...rawStructures, ...rawSpecialStructures];
-            console.log("Total raw structures loaded:", allRawStructures.length);
+        try {
+            // Fetch all structures directly from the Supabase-backed API
+            const response = await fetch('/api/structures');
+            if (!response.ok) {
+                throw new Error(`API request failed with status ${response.status}: ${await response.text()}`);
+            }
+            const rawStructures = await response.json();
+            console.log("Total raw structures loaded from API:", rawStructures.length);
 
             // Process raw structures into the format the app expects
-            structureLibrary = allRawStructures.map(s => {
-                // Safely get values with fallbacks
+            structureLibrary = rawStructures.map(s => {
+                // The data from the API is already structured, but we may need to parse string fields
                 const materialsStr = s.materials || '';
                 const labourStr = s.labour || '';
-                const voltageStr = s.voltage || '';
+                
+                                // The voltage from the DB might be a string like "{val1,val2}" or just "val1"
+                let voltage = [];
+                if (Array.isArray(s.voltage)) {
+                    // It's already a proper JS array, use it directly
+                    voltage = s.voltage;
+                } else if (typeof s.voltage === 'string') {
+                    console.log(`Raw voltage for ${s.name}:`, s.voltage); // Debug log
+                    
+                    let cleanStr = s.voltage.trim();
+                    
+                    // Handle potential double stringification or escaped quotes
+                    // e.g. "{DTR,\"33 kV\"}" -> {DTR,"33 kV"}
+                    cleanStr = cleanStr.replace(/\\"/g, '"');
 
-                // Parse materials string "1:1;3:1;5:3" (semicolon separated)
+                    // Remove outer braces { } repeatedly to handle {{...}}
+                    while (cleanStr.startsWith('{') && cleanStr.endsWith('}')) {
+                        cleanStr = cleanStr.slice(1, -1);
+                    }
+
+                    if (cleanStr) {
+                        // Split by comma
+                        // Note: This simple split assumes no commas INSIDE the voltage values themselves.
+                        voltage = cleanStr.split(',').map(item => {
+                            let val = item.trim();
+                            // Remove surrounding quotes if present
+                            if (val.startsWith('"') && val.endsWith('"')) {
+                                val = val.slice(1, -1);
+                            }
+                            // Remove surrounding single quotes if present
+                            if (val.startsWith("'") && val.endsWith("'")) {
+                                val = val.slice(1, -1);
+                            }
+                            return val;
+                        }).filter(v => v.length > 0);
+                    }
+                } else {
+                    // It's null, undefined, or some other type (e.g., number)
+                    voltage = [];
+                }
+
+// Parse materials string "1:1;3:1;5:3" (semicolon separated)
                 const materials = materialsStr.split(';')
                     .map(pair => {
                         const parts = pair.split(':');
@@ -895,26 +929,23 @@
                     })
                     .filter(item => item && !isNaN(item.index) && !isNaN(item.qty));
 
-                // Parse voltage (pipe separated for multiple values)
-                const voltage = voltageStr.split('|').map(v => v.trim()).filter(v => v);
-
                 return {
                     id: s.id || '',
                     name: s.name || '',
                     description: s.description || '',
-                    voltage: voltage,
+                    voltage: voltage, // Use the parsed array
                     materials: materials,
                     labour: labour
                 };
             });
-
+            
             // Sort the library by name
             structureLibrary.sort((a, b) => a.name.localeCompare(b.name));
-            console.log("Structure library loaded successfully:", structureLibrary.length, "structures");
+            console.log("Structure library loaded and processed successfully:", structureLibrary.length, "structures");
             console.log("Sample structure voltages:", structureLibrary.slice(0, 3).map(s => ({ name: s.name, voltage: s.voltage })));
 
         } catch (error) {
-            console.error("Failed to load structure library:", error.message);
+            console.error("Failed to load structure library from API:", error.message);
             alert("Error: Could not load the core structure data from the server. The application may not function correctly.");
         }
     });
@@ -1027,6 +1058,12 @@
         const tabsContainer = document.getElementById('structure-tabs-container');
         tabsContainer.innerHTML = ''; // Clear previous content
         
+        // --- DEBUGGING LOG ---
+        console.log("--- Debugging Structure Filter ---");
+        console.log("User selected voltage levels:", JSON.stringify(estimate.voltageLevels, null, 2));
+        console.log("First 5 structures from library with their voltages:", JSON.stringify(structureLibrary.slice(0, 5).map(s => ({ name: s.name, voltage: s.voltage })), null, 2));
+        // --- END DEBUGGING LOG ---
+
         const relevantStructures = structureLibrary.filter(s =>
             s.voltage.some(v => estimate.voltageLevels.includes(v))
         );
@@ -1229,68 +1266,57 @@
     // --- STEP 5: ESTIMATE GENERATION ---
     async function generateEstimate() {
         try {
-            // 1. Fetch data
-            const [materialMaster, labourMaster] = await Promise.all([
-                fetchCSV(materialsSheetURL),
-                fetchCSV(labourSheetURL)
-            ]);
+            // 1. Prepare payload for the API
+            const payload = {
+                structures: estimate.structures, // { structureId: quantity }
+                structureLibrary: structureLibrary // The full library, so the backend can find structure details
+            };
 
-            // 2. Process BOQ
-            const consolidatedMaterials = {};
-            const consolidatedLabour = {};
-            const missingItems = [];
+            // 2. Call the backend API to generate the estimate
+            const response = await fetch('/api/generate-estimate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
 
-            for (const structureId in estimate.structures) {
-                const quantity = estimate.structures[structureId];
-                const structure = structureLibrary.find(s => s.id === structureId);
-
-                // Process materials
-                structure.materials.forEach(item => {
-                    const masterItem = materialMaster.find(m => parseInt(m.mat_sl, 10) === item.index);
-                    if (!masterItem) {
-                        missingItems.push(`Material at index ${item.index} for structure '${structure.name}' not found in master sheet.`);
-                        return;
-                    }                    
-                    const itemCode = masterItem['Materials Code']; // This is the value from the first column, used as the unique key.
-
-                    if (!consolidatedMaterials[itemCode]) {
-                        consolidatedMaterials[itemCode] = {
-                            code: itemCode, // The code to display is the key itself.
-                            name: masterItem['Description'],
-                            unit: masterItem['Unit'],
-                            rate: parseFloat(masterItem['Rate(Rs)']),
-                            totalQty: 0
-                        };
-                    }
-                    consolidatedMaterials[itemCode].totalQty += item.qty * quantity;
-                });
-
-                // Process labour
-                structure.labour.forEach(item => {
-                    const masterItem = labourMaster.find(l => parseInt(l.lab_sl, 10) === item.index);
-                     if (!masterItem) {
-                        missingItems.push(`Labour item at index ${item.index} for structure '${structure.name}' not found in master sheet.`);
-                        return;
-                    }
-                    const itemCode = masterItem['lab_sl']; // Use lab_sl as the unique key
-                    if (!consolidatedLabour[itemCode]) {
-                        consolidatedLabour[itemCode] = {
-                            name: masterItem['Description'],
-                            unit: masterItem['Unit'],
-                            rate: parseFloat(masterItem['Rate (Rs)']),
-                            totalQty: 0
-                        };
-                    }
-                    consolidatedLabour[itemCode].totalQty += item.qty * quantity;
-                });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'API request failed');
             }
 
-            // 3. Render Output
+            const { materials, labour, missingItems } = await response.json();
+
+            // 3. The backend now returns processed data, so we need to adjust renderOutput
+            // The new `renderOutput` expects objects with calculated costs. Let's adapt.
+            const consolidatedMaterials = {};
+            materials.forEach(item => {
+                consolidatedMaterials[item.mat_sl] = {
+                    code: item.code,
+                    name: item.name,
+                    unit: item.unit,
+                    rate: item.rate,
+                    totalQty: item.totalQty
+                };
+            });
+
+            const consolidatedLabour = {};
+            labour.forEach(item => {
+                consolidatedLabour[item.lab_sl] = {
+                    name: item.name,
+                    unit: item.unit,
+                    rate: item.rate,
+                    totalQty: item.totalQty
+                };
+            });
+            
+            // 4. Render Output with data from the API
             renderOutput(consolidatedMaterials, consolidatedLabour, missingItems);
 
         } catch (error) {
-            console.error("Failed to generate estimate:", error);
-            document.getElementById('estimate-output').innerHTML = `<div class="error-message"><strong>Error:</strong> Could not fetch data from the server. Please check your internet connection and try again.</div>`;
+            console.error("Failed to generate estimate via API:", error);
+            document.getElementById('estimate-output').innerHTML = `<div class="error-message"><strong>Error:</strong> ${error.message}. Please check the console for more details.</div>`;
         } finally {
             document.getElementById('loader').style.display = 'none';
             document.getElementById('estimate-output').style.display = 'block';
@@ -1527,57 +1553,6 @@
         outputContainer.innerHTML = outputHTML;
     }
 
-    // --- UTILITIES ---
-    async function fetchCSV(url) {
-        try {
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`Network response was not ok: ${response.statusText}`);
-            }
-            const csvText = await response.text();
-            return parseCSV(csvText);
-        } catch (error) {
-            console.error('Error fetching CSV:', error);
-            throw error; // Re-throw to be caught by the caller
-        }
-    }
-
-    function parseCSV(text) {
-        const lines = text.trim().split('\n');
-        const headers = parseCSVLine(lines[0]);
-        const rows = [];
-        for (let i = 1; i < lines.length; i++) {
-            const values = parseCSVLine(lines[i]);
-            if (values.length === headers.length) {
-                const row = {};
-                for (let j = 0; j < headers.length; j++) {
-                    row[headers[j]] = values[j];
-                }
-                rows.push(row);
-            }
-        }
-        return rows;
-    }
-
-    function parseCSVLine(line) {
-        const values = [];
-        let current = '';
-        let inQuotes = false;
-        
-        for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            if (char === '"') {
-                inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-                values.push(current.trim());
-                current = '';
-            } else {
-                current += char;
-            }
-        }
-        values.push(current.trim());
-        return values;
-    }
 
     // Function to convert numbers to words (Indian Rupees)
     function convertNumberToWordsINR(num) {

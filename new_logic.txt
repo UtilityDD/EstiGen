@@ -1,0 +1,40 @@
+                // The voltage from the DB might be a string like "{val1,val2}" or just "val1"
+                let voltage = [];
+                if (Array.isArray(s.voltage)) {
+                    // It's already a proper JS array, use it directly
+                    voltage = s.voltage;
+                } else if (typeof s.voltage === 'string') {
+                    console.log(`Raw voltage for ${s.name}:`, s.voltage); // Debug log
+                    
+                    let cleanStr = s.voltage.trim();
+                    
+                    // Handle potential double stringification or escaped quotes
+                    // e.g. "{DTR,\"33 kV\"}" -> {DTR,"33 kV"}
+                    cleanStr = cleanStr.replace(/\\"/g, '"');
+
+                    // Remove outer braces { } repeatedly to handle {{...}}
+                    while (cleanStr.startsWith('{') && cleanStr.endsWith('}')) {
+                        cleanStr = cleanStr.slice(1, -1);
+                    }
+
+                    if (cleanStr) {
+                        // Split by comma
+                        // Note: This simple split assumes no commas INSIDE the voltage values themselves.
+                        voltage = cleanStr.split(',').map(item => {
+                            let val = item.trim();
+                            // Remove surrounding quotes if present
+                            if (val.startsWith('"') && val.endsWith('"')) {
+                                val = val.slice(1, -1);
+                            }
+                            // Remove surrounding single quotes if present
+                            if (val.startsWith("'") && val.endsWith("'")) {
+                                val = val.slice(1, -1);
+                            }
+                            return val;
+                        }).filter(v => v.length > 0);
+                    }
+                } else {
+                    // It's null, undefined, or some other type (e.g., number)
+                    voltage = [];
+                }
+

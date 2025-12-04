@@ -78,47 +78,36 @@
 
             // Convert API data to the JSON structure used by the editor
             structureData = rawStructures.map(s => {
-                // Parse materials - semicolon separated "1:1;3:1;5:3"
+                // The API returns pre-formatted JSON, but we'll ensure data types are correct
+                // and parse string-based formats if they exist.
+                
+                // Parse materials from string "1:1;3:1;5:3"
                 let materials = [];
                 if (typeof s.materials === 'string' && s.materials) {
-                    materials = s.materials.split(';')
-                        .map(pair => {
-                            const parts = pair.split(':');
-                            if (parts.length < 2) return null;
-                            return { index: parseInt(parts[0].trim(), 10), qty: parseFloat(parts[1].trim()) };
-                        })
-                        .filter(item => item && !isNaN(item.index) && !isNaN(item.qty));
+                    materials = s.materials.split(';').map(pair => {
+                        const parts = pair.split(':');
+                        return parts.length === 2 ? { index: parseInt(parts[0], 10), qty: parseFloat(parts[1]) } : null;
+                    }).filter(Boolean);
                 } else if (Array.isArray(s.materials)) {
-                    materials = s.materials;
+                    materials = s.materials; // Already in correct format
                 }
 
-                // Parse labour - semicolon separated
+                // Parse labour from string "1:1;3:1;5:3"
                 let labour = [];
                 if (typeof s.labour === 'string' && s.labour) {
-                    labour = s.labour.split(';')
-                        .map(pair => {
-                            const parts = pair.split(':');
-                            if (parts.length < 2) return null;
-                            return { index: parseInt(parts[0].trim(), 10), qty: parseFloat(parts[1].trim()) };
-                        })
-                        .filter(item => item && !isNaN(item.index) && !isNaN(item.qty));
+                    labour = s.labour.split(';').map(pair => {
+                        const parts = pair.split(':');
+                        return parts.length === 2 ? { index: parseInt(parts[0], 10), qty: parseFloat(parts[1]) } : null;
+                    }).filter(Boolean);
                 } else if (Array.isArray(s.labour)) {
-                    labour = s.labour;
-                }
-
-                // Parse voltage - pipe separated "33 kV|11 kV"
-                let voltage = [];
-                if (typeof s.voltage === 'string') {
-                    voltage = s.voltage.split('|').map(v => v.trim()).filter(v => v);
-                } else if (Array.isArray(s.voltage)) {
-                    voltage = s.voltage;
+                    labour = s.labour; // Already in correct format
                 }
 
                 return {
-                    id: s.id,
-                    name: s.name,
-                    description: s.description,
-                    voltage: voltage,
+                    id: s.id || '',
+                    name: s.name || '',
+                    description: s.description || '',
+                    voltage: s.voltage || '', // Expecting a single string from the API
                     materials: materials,
                     labour: labour
                 };
@@ -160,8 +149,8 @@
                         <input type="text" data-field="description" value="${structure.description}">
                     </div>
                     <div class="form-group">
-                        <label>Voltage (comma-separated)</label>
-                        <input type="text" data-field="voltage" value="${Array.isArray(structure.voltage) ? structure.voltage.join(', ') : (structure.voltage || '')}">
+                        <label>Voltage</label>
+                        <input type="text" data-field="voltage" value="${structure.voltage || ''}">
                     </div>
                     <div class="form-group">
                         <label>Materials (JSON format)</label>
@@ -205,22 +194,24 @@
 
         showLoader(true, 'Saving...');
         try {
+            // The API endpoint expects each structure to have a single voltage string.
+            const payload = structureData.map(s => {
+                const materialsStr = (s.materials || []).map(m => `${m.index}:${m.qty}`).join(';');
+                const labourStr = (s.labour || []).map(l => `${l.index}:${l.qty}`).join(';');
+                return {
+                    id: s.id,
+                    name: s.name,
+                    description: s.description,
+                    voltage: s.voltage, // Send the single voltage string directly
+                    materials: materialsStr,
+                    labour: labourStr
+                };
+            });
+
             const response = await fetch(API_URL_UPDATE, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // Convert the UI data back to the CSV format before sending
-                body: JSON.stringify(structureData.map(s => {
-                    const materialsStr = s.materials.map(m => `${m.index}:${m.qty}`).join(';');
-                    const labourStr = s.labour.map(l => `${l.index}:${l.qty}`).join(';');
-                    return {
-                        id: s.id,
-                        name: s.name,
-                        description: s.description,
-                        voltage: Array.isArray(s.voltage) ? s.voltage.join('|') : '',
-                        materials: materialsStr,
-                        labour: labourStr
-                    };
-                }))
+                body: JSON.stringify(payload)
             });
 
             const result = await response.json();
@@ -230,7 +221,7 @@
             }
 
             showNotification(result.message, 'success');
-            loadStructures(); // Reload to confirm changes
+            await loadStructures(); // Reload to confirm changes and get fresh data
 
         } catch (error) {
             showNotification(`Save failed: ${error.message}`, 'error');
@@ -245,18 +236,16 @@
         const newStructureData = [];
         let allValid = true;
 
-        cards.forEach(card => {
-            const index = parseInt(card.dataset.index, 10);
-            const structure = { ...structureData[index] }; // Create a copy
+        for (const card of cards) {
+            const structure = {}; // Start with a fresh object
 
             // --- Text and simple inputs ---
             structure.id = card.querySelector('[data-field="id"]').value.trim();
             structure.name = card.querySelector('[data-field="name"]').value.trim();
             structure.description = card.querySelector('[data-field="description"]').value.trim();
             
-            // --- Voltage array ---
-            const voltageString = card.querySelector('[data-field="voltage"]').value;
-            structure.voltage = typeof voltageString === 'string' ? voltageString.split(',').map(v => v.trim()).filter(Boolean) : [];
+            // --- Voltage string ---
+            structure.voltage = card.querySelector('[data-field="voltage"]').value.trim();
 
             // --- JSON Textareas (Materials & Labour) ---
             try {
@@ -265,19 +254,27 @@
 
                 const labourText = card.querySelector('[data-field="labour"]').value;
                 structure.labour = JSON.parse(labourText);
-
+                
                 newStructureData.push(structure);
             } catch (e) {
                 allValid = false;
-                alert(`Invalid JSON format in structure with ID '${structure.id}'. Please correct it before saving.\n\nError: ${e.message}`);
-                const textarea = e.message.includes('materials') ? card.querySelector('[data-field="materials"]') : card.querySelector('[data-field="labour"]');
+                const textarea = e.message.includes('materials') 
+                    ? card.querySelector('[data-field="materials"]') 
+                    : card.querySelector('[data-field="labour"]');
+                
+                // Highlight the problematic field and show an alert
                 textarea.style.border = '2px solid var(--error-color)';
+                alert(`Invalid JSON format in structure with ID '${structure.id}'. Please correct it before saving.\n\nError: ${e.message}`);
+                
+                // Reset style after a few seconds
+                setTimeout(() => { textarea.style.border = '1px solid var(--medium-gray)'; }, 5000);
+                
+                break; // Stop processing further cards
             }
-        });
+        }
 
         if (allValid) {
-            // The order might have changed, so we use the new array
-            structureData = newStructureData;
+            structureData = newStructureData; // Replace the old data with the newly collected data
             return true;
         }
         return false;

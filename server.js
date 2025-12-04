@@ -1,6 +1,6 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
+const { supabase } = require('./supabase-config');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -8,96 +8,45 @@ const PORT = process.env.PORT || 3000;
 // Middleware to parse JSON bodies and serve static files
 app.use(express.json());
 app.use(express.static(__dirname));
-// Serve the data folder from the parent directory at the /data route
-app.use('/data', express.static(path.join(__dirname, '..', 'data')));
 
-// --- File Paths ---
-const STRUCTURE_FILE = path.join(__dirname, '..', 'data', 'structure.csv');
+// --- Supabase Database Functions ---
 
-// --- CSV Parser Utility ---
-function parseCSV(text) {
-    const lines = text.trim().split('\n');
-    const headers = lines[0].split(',').map(h => h.trim());
-    const rows = [];
-    for (let i = 1; i < lines.length; i++) {
-        // Handle quoted values with commas inside
-        const values = parseCSVLine(lines[i]);
-        if (values.length === headers.length) {
-            const row = {};
-            for (let j = 0; j < headers.length; j++) {
-                row[headers[j]] = values[j];
-            }
-            rows.push(row);
-        }
-    }
-    return rows;
-}
-
-function parseCSVLine(line) {
-    const values = [];
-    let current = '';
-    let inQuotes = false;
-    
-    for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        if (char === '"') {
-            inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-            values.push(current.trim());
-            current = '';
-        } else {
-            current += char;
-        }
-    }
-    values.push(current.trim());
-    return values;
-}
-
-// --- CSV Generator Utility ---
-function generateCSV(structures) {
-    const headers = ['id', 'name', 'description', 'voltage', 'materials', 'labour'];
-    const lines = [headers.join(',')];
-    
-    structures.forEach(s => {
-        const row = [
-            s.id,
-            `"${s.name}"`,
-            `"${s.description}"`,
-            `"${s.voltage}"`,
-            `"${s.materials}"`,
-            `"${s.labour}"`
-        ];
-        lines.push(row.join(','));
-    });
-    
-    return lines.join('\n');
-}
-
-// API endpoint to GET the current structure data (as JSON)
-app.get('/api/structures', (req, res) => {
+// API endpoint to GET the current structure data from Supabase (as JSON)
+app.get('/api/structures', async (req, res) => {
     try {
-        const csvText = fs.readFileSync(STRUCTURE_FILE, 'utf-8');
-        const structures = parseCSV(csvText);
-        
-        // Convert to the format expected by the app
-        const formattedStructures = structures.map(s => ({
-            id: s.id,
-            name: s.name,
-            description: s.description,
-            voltage: s.voltage,
-            materials: s.materials,
-            labour: s.labour
-        }));
-        
-        res.json(formattedStructures);
+        // Fetch from both structure and special_structure tables
+        const [structuresResult, specialStructuresResult] = await Promise.all([
+            supabase.from('structures').select('*'),
+            supabase.from('special_structures').select('*')
+        ]);
+
+        if (structuresResult.error) throw structuresResult.error;
+        if (specialStructuresResult.error) throw specialStructuresResult.error;
+
+        // Log the count from each table for debugging
+        console.log(`Fetched ${structuresResult.data?.length || 0} rows from 'structures' table.`);
+        console.log(`Fetched ${specialStructuresResult.data?.length || 0} rows from 'special_structures' table.`);
+
+        // Combine both results
+        const allStructures = [
+            ...(structuresResult.data || []),
+            ...(specialStructuresResult.data || [])
+        ];
+
+        res.json(allStructures);
     } catch (error) {
-        console.error("Error reading structure file:", error.message);
-        res.status(500).json({ message: 'Error reading structure data.', details: error.message });
+        console.error("Error reading structure data from Supabase. Full error:", error);
+        res.status(500).json({ 
+            message: 'Error reading structure data from Supabase.', 
+            details: error.message,
+            code: error.code, // Send back Supabase-specific error code if available
+            hint: error.hint // Send back Supabase-specific hint if available
+        });
     }
 });
 
-// API endpoint to POST (update) the structure data
-app.post('/api/structures/update', (req, res) => {
+// API endpoint to POST (update) the structure data to Supabase
+app.post('/api/structures/update', async (req, res) => {
     const updatedStructures = req.body;
 
     if (!Array.isArray(updatedStructures)) {
@@ -105,39 +54,71 @@ app.post('/api/structures/update', (req, res) => {
     }
 
     try {
-        const csvContent = generateCSV(updatedStructures);
-        fs.writeFileSync(STRUCTURE_FILE, csvContent, 'utf-8');
+        // Separate structures into regular and special based on voltage field
+        const regularStructures = updatedStructures.filter(s => s.voltage !== 'Special Structure');
+        const specialStructures = updatedStructures.filter(s => s.voltage === 'Special Structure');
+
+        // Update regular structures
+        if (regularStructures.length > 0) {
+            const { error: structError } = await supabase
+                .from('structures')
+                .upsert(regularStructures, { onConflict: 'id' });
+
+            if (structError) throw structError;
+        }
+
+        // Update special structures
+        if (specialStructures.length > 0) {
+            const { error: specialError } = await supabase
+                .from('special_structures')
+                .upsert(specialStructures, { onConflict: 'id' });
+
+            if (specialError) throw specialError;
+        }
+
         res.status(200).json({ message: 'Structures updated successfully!' });
     } catch (error) {
-        console.error("Error writing structure file:", error.message);
+        console.error("Error writing structure data to Supabase:", error.message);
         res.status(500).json({ message: 'An error occurred while saving data.', details: error.message });
     }
 });
 
 // API endpoint to generate estimate from posted structures and library
-app.post('/api/generate-estimate', (req, res) => {
+app.post('/api/generate-estimate', async (req, res) => {
     try {
         const payload = req.body || {};
         const structures = payload.structures || {};
         const library = payload.structureLibrary || [];
 
-        // Load material and labour master lists
-        const matText = fs.readFileSync(path.join(__dirname, '..', 'data', 'mat.csv'), 'utf-8');
-        const labText = fs.readFileSync(path.join(__dirname, '..', 'data', 'lab.csv'), 'utf-8');
-        const matRows = parseCSV(matText);
-        const labRows = parseCSV(labText);
+        console.log(`[API] Generating estimate for ${Object.keys(structures).length} structure types...`);
+
+        // Load material and labour master lists from Supabase
+        const [materialsResult, labourResult] = await Promise.all([
+            supabase.from('materials').select('*'),
+            supabase.from('labour').select('*')
+        ]);
+
+        if (materialsResult.error) throw materialsResult.error;
+        if (labourResult.error) throw labourResult.error;
+
+        const matRows = materialsResult.data || [];
+        const labRows = labourResult.data || [];
 
         // Build lookup maps by mat_sl and lab_sl
         const matBySl = {};
         matRows.forEach(r => {
-            const key = r.mat_sl || r['mat_sl'];
+            const key = r.mat_sl;
             if (key) matBySl[String(key).trim()] = r;
         });
         const labBySl = {};
         labRows.forEach(r => {
-            const key = r.lab_sl || r['lab_sl'];
+            const key = r.lab_sl;
             if (key) labBySl[String(key).trim()] = r;
         });
+
+        console.log(`Loaded ${Object.keys(matBySl).length} materials and ${Object.keys(labBySl).length} labour items from Supabase.`);
+        if (matRows.length > 0) console.log('Sample material:', matRows[0]);
+        if (labRows.length > 0) console.log('Sample labour:', labRows[0]);
 
         const materialsAgg = {}; // key = mat_sl
         const labourAgg = {}; // key = lab_sl
@@ -181,12 +162,12 @@ app.post('/api/generate-estimate', (req, res) => {
         // Convert aggregates to arrays with costs
         const materials = Object.keys(materialsAgg).map(k => {
             const entry = materialsAgg[k];
-            const rate = parseFloat(entry.mat['Rate(Rs)'] || entry.mat.Rate || 0);
+            const rate = parseFloat(entry.mat['Rate(Rs)'] || entry.mat['Rate (Rs)'] || 0);
             const totalQty = entry.totalQty;
             const cost = totalQty * rate;
             return {
                 mat_sl: k,
-                code: entry.mat['Materials Code'] || entry.mat.code || '',
+                code: entry.mat['Material Code'] || '',
                 name: entry.mat.Description || '',
                 unit: entry.mat.Unit || '',
                 rate: rate,
@@ -197,12 +178,12 @@ app.post('/api/generate-estimate', (req, res) => {
 
         const labour = Object.keys(labourAgg).map(k => {
             const entry = labourAgg[k];
-            const rate = parseFloat(entry.lab['Rate(Rs)'] || entry.lab.Rate || 0);
+            const rate = parseFloat(entry.lab['Rate (Rs)'] || entry.lab['Rate(Rs)'] || 0);
             const totalQty = entry.totalQty;
             const cost = totalQty * rate;
             return {
                 lab_sl: k,
-                code: entry.lab['Labour Code'] || entry.lab.lab_code || '',
+                code: entry.lab['Labour Code'] || '',
                 name: entry.lab.Description || '',
                 unit: entry.lab.Unit || '',
                 rate: rate,
@@ -211,10 +192,17 @@ app.post('/api/generate-estimate', (req, res) => {
             };
         });
 
+        console.log(`[API] Estimate generated: ${materials.length} materials, ${labour.length} labour items`);
+
         res.json({ materials, labour, missingItems });
     } catch (error) {
-        console.error('generate-estimate error', error);
-        res.status(500).json({ message: 'Internal server error during estimate generation', details: error.message });
+        console.error("Error during estimate generation. Full error:", error);
+        res.status(500).json({ 
+            message: 'An error occurred during estimate generation.', 
+            details: error.message,
+            code: error.code,
+            hint: error.hint
+        });
     }
 });
 
