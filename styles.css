@@ -670,3 +670,198 @@
             width: 45%;
             font-size: 0.9rem;
         }
+ 
+ /* ============================================
+   PRINT-FRIENDLY & COMPACT PDF STYLES
+   ============================================ */
+@media print {
+
+    /* Hide unnecessary elements */
+    .header,
+    .export-buttons,
+    button,
+    .no-print {
+        display: none !important;
+    }
+
+    /* Compact spacing */
+    body {
+        margin: 0;
+        padding: 0;
+        font-size: 9pt;
+        line-height: 1.3;
+    }
+
+    .container {
+        width: 100%;
+        max-width: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    /* Compact headings */
+    h1 {
+        font-size: 16pt;
+        margin: 8pt 0 6pt 0;
+    }
+
+    h2 {
+        font-size: 13pt;
+        margin: 6pt 0 4pt 0;
+    }
+
+    h3 {
+        font-size: 11pt;
+        margin: 5pt 0 3pt 0;
+    }
+
+    /* Compact estimate output */
+    #estimate-output {
+        padding: 5pt;
+    }
+
+    /* Compact tables */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 8pt;
+        margin: 5pt 0;
+        page-break-inside: auto;
+    }
+
+    thead {
+        display: table-header-group;
+    }
+
+    tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+
+    th {
+        padding: 3pt 4pt;
+        font-size: 8.5pt;
+        background-color: #f5f5f5 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    td {
+        padding: 2pt 4pt;
+        font-size: 8pt;
+    }
+
+    /* Compact estimate info section */
+    .estimate-info {
+        margin: 5pt 0;
+        padding: 4pt;
+        font-size: 8.5pt;
+    }
+
+    .estimate-info p {
+        margin: 2pt 0;
+        line-height: 1.3;
+    }
+
+    /* Compact summary sections */
+    .summary-section,
+    .cost-summary {
+        margin: 6pt 0;
+        padding: 4pt;
+    }
+
+    .summary-row {
+        padding: 2pt 0;
+        font-size: 9pt;
+    }
+
+    /* Total rows - slightly larger but still compact */
+    .total-row,
+    .grand-total-row {
+        font-size: 9.5pt;
+        padding: 3pt 4pt;
+        font-weight: bold;
+    }
+
+    /* Ensure colors print */
+    * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Page breaks */
+    .page-break {
+        page-break-before: always;
+    }
+
+    .no-break {
+        page-break-inside: avoid;
+    }
+
+    /* Reduce spacing between sections */
+    .estimate-section {
+        margin: 6pt 0;
+    }
+
+    /* Compact structure details if present */
+    .structure-item {
+        margin: 2pt 0;
+        padding: 2pt;
+        font-size: 8pt;
+    }
+
+    /* Make estimate header more compact */
+    .estimate-header {
+        margin-bottom: 6pt;
+        padding: 4pt;
+    }
+
+    /* Compact footer/notes */
+    .estimate-footer,
+    .estimate-notes {
+        margin-top: 8pt;
+        padding: 4pt;
+        font-size: 7.5pt;
+    }
+}
+
+/* Force compact styles for PDF generation (html2pdf captures current view) */
+.pdf-mode {
+    font-size: 9pt !important;
+    line-height: 1.3 !important;
+}
+
+.pdf-mode h1 {
+    font-size: 16pt !important;
+    margin: 8pt 0 6pt 0 !important;
+}
+
+.pdf-mode h2 {
+    font-size: 13pt !important;
+    margin: 6pt 0 4pt 0 !important;
+}
+
+.pdf-mode h3 {
+    font-size: 11pt !important;
+    margin: 5pt 0 3pt 0 !important;
+}
+
+.pdf-mode table {
+    font-size: 8pt !important;
+    margin: 5pt 0 !important;
+}
+
+.pdf-mode th {
+    padding: 3pt 4pt !important;
+    font-size: 8.5pt !important;
+}
+
+.pdf-mode td {
+    padding: 2pt 4pt !important;
+    font-size: 8pt !important;
+}
+
+.pdf-mode .estimate-info p {
+    margin: 2pt 0 !important;
+    font-size: 8.5pt !important;
+}

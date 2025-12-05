@@ -503,13 +503,16 @@ function openSldPage() {
 function downloadEstimatePDF() {
     const element = document.getElementById('estimate-output');
 
+    // Apply compact PDF mode
+    element.classList.add('pdf-mode');
+
     // Create a filename based on work name and estimate ID
     const sanitizedWorkName = estimate.workName.replace(/[^a-z0-9]/gi, '_');
     const filename = `${sanitizedWorkName}_${estimate.estimateId}.pdf`;
 
     // Configure PDF options
     const options = {
-        margin: [10, 10, 10, 10], // top, left, bottom, right in mm
+        margin: [8, 8, 8, 8], // top, left, bottom, right in mm (reduced for compact look)
         filename: filename,
         image: {
             type: 'jpeg',
@@ -536,8 +539,13 @@ function downloadEstimatePDF() {
         }
     };
 
-    // Generate and download the PDF
-    html2pdf().set(options).from(element).save();
+    // Generate and download the PDF, then remove compact mode
+    html2pdf().set(options).from(element).save().then(() => {
+        element.classList.remove('pdf-mode');
+    }).catch((error) => {
+        console.error('PDF generation failed:', error);
+        element.classList.remove('pdf-mode');
+    });
 }
 
 function renderOutput(materials, labour, missingItems) {
