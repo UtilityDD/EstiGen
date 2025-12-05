@@ -64,19 +64,6 @@ const tableConfigs = {
             { key: 'Unit', label: 'Unit', type: 'text', required: true },
             { key: 'Rate (Rs)', label: 'Rate (Rs)', type: 'number', required: true, step: '0.01' }
         ]
-    },
-    estimates: {
-        title: 'Saved Estimates',
-        apiEndpoint: '/api/estimates',
-        columns: [
-            { key: 'estimate_id', label: 'Estimate ID', width: '15%' },
-            { key: 'work_name', label: 'Work Name', width: '30%' },
-            { key: 'work_category', label: 'Category', width: '15%' },
-            { key: 'grand_total', label: 'Total (₹)', width: '15%', align: 'right', render: (val) => formatCurrency(val) },
-            { key: 'created_at', label: 'Created', width: '15%', render: (val) => new Date(val).toLocaleDateString('en-IN') }
-        ],
-        formFields: [], // Estimates are read-only for now
-        readOnly: true
     }
 };
 

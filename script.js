@@ -137,6 +137,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 alert("Could not load the saved estimate data. It may be corrupt.");
             }
         }
+    } else {
+        // If not loading a saved estimate, start at step 1
+        document.getElementById('step-1').classList.add('active');
+        currentStep = 1;
     }
 
     // --- STEP 1: WORK CATEGORY ---
@@ -175,6 +179,12 @@ function goToStep(stepNumber) {
             return;
         }
         renderStructureList();
+    }
+    if (stepNumber === 4) {
+        // Pre-fill Step 4 fields when navigating to it
+        document.getElementById('work-name').value = estimate.workName;
+        document.getElementById('prepared-by').value = estimate.preparedBy;
+        document.getElementById('surveyed-by').value = estimate.surveyedBy;
     }
     if (stepNumber === 5) {
         // Capture values from Step 4 and 4.5 and validate
