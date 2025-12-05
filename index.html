@@ -13,8 +13,9 @@
 
     <div class="container">
         <div class="header">
-            <h1>EstiGen: <span style="font-weight: normal; font-size: 0.7em; opacity: 0.9;">estimate made easy</span>
+            <h1>EstiGen: <span style="font-weight: normal; font-size: 0.7em; opacity: 0.9;">Estimate Made Easy</span>
             </h1>
+            <a href="saved-estimates.html">📂 Saved Estimates</a>
             <a href="admin.html" target="_blank">Admin Panel</a>
         </div>
 
@@ -158,15 +159,17 @@
                 <!-- Estimate will be rendered here -->
             </div>
             <div id="export-buttons" class="export-buttons" style="display: none;">
-                <button class="btn btn-secondary" onclick="goToStep(1)">Start New Estimate</button>
-                <button class="btn btn-secondary" onclick="goToStep(4.5)">Back to Edit</button>
-                <button class="btn btn-primary" onclick="openSldPage()">View Full SLD</button>
-                <button class="btn btn-primary" onclick="downloadEstimatePDF()">?? Download PDF</button>
+                <button class="btn btn-secondary" onclick="goToStep(1)">New</button>
+                <button class="btn btn-secondary" onclick="goToStep(4.5)">Edit</button>
+                <button class="btn btn-success" onclick="saveEstimate()">💾 Save</button>
+                <button class="btn btn-primary" onclick="openSldPage()">View SLD</button>
+                <button class="btn btn-primary" onclick="downloadEstimatePDF()">📥 Download</button>
             </div>
         </div>
     </div>
 
     <script src="script.js"></script>
+    <script src="save-estimate.js"></script>
 
 
 

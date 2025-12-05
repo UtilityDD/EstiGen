@@ -79,12 +79,8 @@ module.exports = (supabase) => {
             }
 
             console.log(`📋 Fetched ${data.length} estimates (total: ${count})`);
-            res.json({
-                estimates: data,
-                total: count,
-                limit: parseInt(limit),
-                offset: parseInt(offset)
-            });
+            // Return data array directly instead of nested object
+            res.json(data || []);
         } catch (error) {
             console.error('Error fetching estimates:', error);
             res.status(500).json({ error: error.message || 'Failed to fetch estimates' });

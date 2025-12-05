@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Estimates - EstiGen</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="admin-styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Saved Estimates</h1>
+            <div>
+                <a href="index.html">← Back to Generator</a>
+                <a href="admin.html" target="_blank">Admin Panel</a>
+            </div>
+        </div>
+
+        <div class="admin-container">
+            <div class="admin-header">
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Search by estimate ID or work name...">
+                </div>
+                <div class="admin-actions">
+                    <button class="btn btn-secondary" onclick="refreshEstimates()">🔄 Refresh</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table" id="estimatesTable">
+                    <thead>
+                        <tr>
+                            <th>Estimate ID</th>
+                            <th>Work Name</th>
+                            <th>Category</th>
+                            <th>Date Created</th>
+                            <th>Grand Total (₹)</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="estimatesBody">
+                        <!-- Estimates will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="emptyState" style="display: none; text-align: center; padding: 40px;">
+                <h3>No Saved Estimates</h3>
+                <p>You haven't saved any estimates yet.</p>
+                <a href="index.html" class="btn btn-primary">Create New Estimate</a>
+            </div>
+
+            <div id="loader" class="loader" style="display: none;">
+                <div class="spinner"></div>
+                <p>Loading estimates...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="saved-estimates.js"></script>
+</body>
+
+</html>

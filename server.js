@@ -9,6 +9,10 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(__dirname));
 
+// Import and use estimates routes
+const estimatesRoutes = require('./routes/estimates');
+app.use('/api/estimates', estimatesRoutes(supabase));
+
 // --- Supabase Database Functions ---
 
 // API endpoint to GET the current structure data from Supabase (as JSON)
@@ -36,8 +40,8 @@ app.get('/api/structures', async (req, res) => {
         res.json(allStructures);
     } catch (error) {
         console.error("Error reading structure data from Supabase. Full error:", error);
-        res.status(500).json({ 
-            message: 'Error reading structure data from Supabase.', 
+        res.status(500).json({
+            message: 'Error reading structure data from Supabase.',
             details: error.message,
             code: error.code, // Send back Supabase-specific error code if available
             hint: error.hint // Send back Supabase-specific hint if available
@@ -197,8 +201,8 @@ app.post('/api/generate-estimate', async (req, res) => {
         res.json({ materials, labour, missingItems });
     } catch (error) {
         console.error("Error during estimate generation. Full error:", error);
-        res.status(500).json({ 
-            message: 'An error occurred during estimate generation.', 
+        res.status(500).json({
+            message: 'An error occurred during estimate generation.',
             details: error.message,
             code: error.code,
             hint: error.hint

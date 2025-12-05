@@ -1,13 +1,6 @@
 // Save Estimate to Database
 // This file contains functions for persisting estimates to Supabase
 
-// Global variables to store the last generated estimate data
-let lastGeneratedMaterials = [];
-let lastGeneratedLabour = [];
-let lastTotalMaterialCost = 0;
-let lastTotalLabourCost = 0;
-let lastGrandTotal = 0;
-
 // Function to save the current estimate to database
 async function saveEstimate() {
     try {
@@ -44,11 +37,11 @@ async function saveEstimate() {
                 cess_on: estimate.cessOn
             },
             calculatedResults: {
-                materials: lastGeneratedMaterials,
-                labour: lastGeneratedLabour,
-                total_material_cost: lastTotalMaterialCost,
-                total_labour_cost: lastTotalLabourCost,
-                grand_total: lastGrandTotal
+                materials: window.lastGeneratedMaterials || [],
+                labour: window.lastGeneratedLabour || [],
+                total_material_cost: window.lastTotalMaterialCost || 0,
+                total_labour_cost: window.lastTotalLabourCost || 0,
+                grand_total: window.lastGrandTotal || 0
             }
         };
 
