@@ -129,11 +129,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (savedEstimateStr) {
             try {
                 const savedEstimate = JSON.parse(savedEstimateStr);
-                // Tiny delay to ensure DOM is ready
-                setTimeout(() => loadSavedEstimate(savedEstimate), 100);
-                sessionStorage.removeItem('loadedEstimate');
+                // Use a tiny delay to ensure the DOM is fully ready for manipulation
+                setTimeout(() => loadAndRenderSavedEstimate(savedEstimate), 100);
+                sessionStorage.removeItem('loadedEstimate'); // Clean up after loading
             } catch (e) {
-                console.error("Error parsing saved estimate:", e);
+                console.error("Error parsing and loading saved estimate:", e);
+                alert("Could not load the saved estimate data. It may be corrupt.");
             }
         }
     }
@@ -961,103 +962,39 @@ async function saveEstimate() {
     }
 }
 
-// Function to populate application state from saved estimate
-function loadSavedEstimate(savedData) {
-    console.log("Loading saved estimate:", savedData);
+// Function to populate application state from saved estimate and render it directly
+function loadAndRenderSavedEstimate(savedData) {
+    console.log("Loading saved estimate to view:", savedData);
 
-    // Populate global estimate object
-    estimate.workName = savedData.work_name || '';
-    estimate.workCategory = savedData.work_category || '';
-    estimate.preparedBy = savedData.prepared_by || '';
-    estimate.surveyedBy = savedData.surveyed_by || '';
-    estimate.estimateId = savedData.estimate_id || '';
-    estimate.structures = savedData.structures || {};
-    estimate.voltageLevels = savedData.voltage_levels || [];
-    estimate.routeLengths = savedData.route_lengths || {};
+    // 1. Populate the global 'estimate' object so renderOutput and other functions have access to it
+    estimate.estimateId = savedData.estimate_id;
+    estimate.workName = savedData.work_name;
+    estimate.workCategory = savedData.work_category;
+    estimate.voltageLevels = savedData.voltage_levels;
+    estimate.preparedBy = savedData.prepared_by;
+    estimate.surveyedBy = savedData.surveyed_by;
+    estimate.structures = savedData.structures;
+    estimate.routeLengths = savedData.route_lengths;
+    estimate.gstPercent = savedData.gst_percent;
+    estimate.gstOn = savedData.gst_on;
+    estimate.contingencyPercent = savedData.contingency_percent;
+    estimate.contingencyOn = savedData.contingency_on;
+    estimate.supervisionPercent = savedData.supervision_percent;
+    estimate.supervisionOn = savedData.supervision_on;
+    estimate.cessPercent = savedData.cess_percent;
+    estimate.cessOn = savedData.cess_on;
 
-    // Cost parameters
-    estimate.gstPercent = savedData.gst_percent || 18;
-    estimate.gstOn = savedData.gst_on || 'mat-lab';
-    estimate.contingencyPercent = savedData.contingency_percent || 3;
-    estimate.contingencyOn = savedData.contingency_on || 'mat-lab';
-    estimate.supervisionPercent = savedData.supervision_percent || 5;
-    estimate.supervisionOn = savedData.supervision_on || 'mat-lab';
-    estimate.cessPercent = savedData.cess_percent || 1;
-    estimate.cessOn = savedData.cess_on || 'mat-lab';
+    // 2. Directly call renderOutput with the saved materials and labour data
+    renderOutput(savedData.materials || {}, savedData.labour || {}, []);
 
-    // Update UI fields
-    const workNameInput = document.getElementById('work-name');
-    if (workNameInput) workNameInput.value = estimate.workName;
+    // 3. Switch the view directly to the final step
+    // We do this manually to avoid triggering the logic inside goToStep(5)
+    document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+    document.getElementById('step-5').classList.add('active');
+    currentStep = 5;
 
-    const preparedByInput = document.getElementById('prepared-by');
-    if (preparedByInput) preparedByInput.value = estimate.preparedBy;
-
-    const surveyedByInput = document.getElementById('surveyed-by');
-    if (surveyedByInput) surveyedByInput.value = estimate.surveyedBy;
-
-    // Additional Costs Inputs
-    const gstInput = document.getElementById('gst-percent');
-    if (gstInput) gstInput.value = estimate.gstPercent;
-
-    const contingencyInput = document.getElementById('contingency-percent');
-    if (contingencyInput) contingencyInput.value = estimate.contingencyPercent;
-
-    const supervisionInput = document.getElementById('supervision-percent');
-    if (supervisionInput) supervisionInput.value = estimate.supervisionPercent;
-
-    const cessInput = document.getElementById('cess-percent');
-    if (cessInput) cessInput.value = estimate.cessPercent;
-
-    // Select work category
-    const categoryCards = document.querySelectorAll('#work-category-cards .card');
-    categoryCards.forEach(card => {
-        if (card.dataset.value === estimate.workCategory) {
-            card.classList.add('selected');
-        } else {
-            card.classList.remove('selected');
-        }
-    });
-
-    // Select voltage levels
-    const voltageCards = document.querySelectorAll('#voltage-cards .card');
-    voltageCards.forEach(card => {
-        if (estimate.voltageLevels.includes(card.dataset.value)) {
-            card.classList.add('selected');
-        } else {
-            card.classList.remove('selected');
-        }
-    });
-
-    // If we have data, jump to generate step
-    if (estimate.workCategory && estimate.voltageLevels.length > 0) {
-        // Generate structure tabs
-        generateStructureTabs();
-
-        // Fill structure inputs
-        setTimeout(() => {
-            for (const [structId, qty] of Object.entries(estimate.structures)) {
-                // Find input by data attribute or some other way. 
-                // In generateStructureTabs, inputs usually have class 'qty-input' and data-struct-id
-                const inputs = document.querySelectorAll('.qty-input');
-                let input = null;
-
-                // Helper to find input by iterating (since we don't have direct IDs)
-                // Note: Structure generation logic relies on iteration. 
-                // We'll trust that generateStructureTabs creates inputs with data-struct-id if possible.
-                // If not, we might need to rely on structure name or ID match.
-
-                // Assuming script.js generateStructureTabs uses data-struct-id="${s.id}"
-                input = document.querySelector(`input[data-struct-id="${structId}"]`);
-
-                if (input) {
-                    input.value = qty;
-                    // Trigger input event to update row styles if any
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            }
-
-            // Go to the final step and generate
-            goToStep(5);
-        }, 500);
-    }
+    // 4. Ensure loader is hidden and output is shown
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('estimate-output').style.display = 'block';
+    document.getElementById('export-buttons').style.display = 'block';
 }
