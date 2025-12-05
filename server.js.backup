@@ -167,7 +167,7 @@ app.post('/api/generate-estimate', async (req, res) => {
             const cost = totalQty * rate;
             return {
                 mat_sl: k,
-                code: entry.mat['Material Code'] || '',
+                code: entry.mat['Materials Code'] || '',
                 name: entry.mat.Description || '',
                 unit: entry.mat.Unit || '',
                 rate: rate,
