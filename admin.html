@@ -1,329 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Structure Management</title>
-    <style>
-        :root {
-            --primary-color: #00796B; /* Teal */
-            --secondary-color: #004D40; /* Darker Teal */
-            --accent-color: #FFAB40; /* Amber */
-            --light-gray: #ECEFF1; --medium-gray: #B0BEC5; --dark-gray: #37474F; --white: #ffffff;
-            --success-color: #4CAF50; --error-color: #F44336;
-            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-        body { font-family: var(--font-family); background-color: var(--light-gray); margin: 0; padding: 2rem; color: var(--dark-gray); }
-        .container { max-width: 1200px; margin: auto; background: var(--white); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .header { background-color: var(--secondary-color); color: var(--white); padding: 1rem 2rem; border-radius: 12px 12px 0 0; }
-        .header h1 { margin: 0; font-size: 1.75rem; }
-        .main-content { padding: 2rem; }
-        .structure-editor { display: flex; flex-direction: column; gap: 1.5rem; }
-        .structure-card { border: 1px solid var(--medium-gray); border-radius: 8px; background: #fdfdfd; }
-        .structure-header { background: var(--light-gray); padding: 0.75rem 1.5rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--medium-gray); }
-        .structure-body { padding: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
-        .form-group { display: flex; flex-direction: column; }
-        .form-group label { font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem; }
-        .form-group input, .form-group textarea { width: 100%; padding: 0.75rem; font-size: 1rem; border: 1px solid var(--medium-gray); border-radius: 4px; box-sizing: border-box; }
-        .form-group textarea { min-height: 120px; resize: vertical; }
-        .btn { padding: 0.75rem 1.5rem; font-size: 1rem; font-weight: 600; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
-        .btn-primary { background-color: var(--primary-color); color: var(--white); }
-        .btn-primary:hover { background-color: var(--secondary-color); }
-        .btn-danger { background-color: var(--error-color); color: var(--white); }
-        .btn-success { background-color: var(--success-color); color: var(--white); }
-        .toolbar { padding: 1rem 2rem; text-align: right; border-top: 1px solid var(--medium-gray); background: var(--light-gray); border-radius: 0 0 12px 12px; }
-        .notification { padding: 1rem; margin: 0 2rem 1rem; border-radius: 4px; text-align: center; font-weight: 600; display: none; }
-        .notification.success { background-color: #d4edda; color: #155724; }
-        .notification.error { background-color: #f8d7da; color: #721c24; }
-        .loader { text-align: center; padding: 3rem; }
-    </style>
+    <title>EstiGen Admin Panel - Database Management</title>
+    <link rel="stylesheet" href="admin-styles.css">
 </head>
+
 <body>
-
-<div class="container">
-    <div class="header">
-        <h1>Admin Panel: Structure Management</h1>
-    </div>
-
-    <div id="notification" class="notification"></div>
-
-    <div class="main-content">
-        <div id="loader" class="loader">
-            <p>Loading structures...</p>
-        </div>
-        <div id="structure-editor" class="structure-editor" style="display: none;">
-            <!-- Structure cards will be rendered here by JavaScript -->
-        </div>
-    </div>
-
-    <div class="toolbar">
-        <button class="btn btn-primary" onclick="addNewStructure()">Add New Structure</button>
-        <button class="btn btn-success" onclick="saveAllChanges()">Save All Changes</button>
-    </div>
-</div>
-
-<script>
-    const API_URL_GET = '/api/structures'; // Read structures from CSV via API
-    const API_URL_UPDATE = '/api/structures/update'; // Update endpoint (saves to CSV)
-    let structureData = [];
-
-    document.addEventListener('DOMContentLoaded', loadStructures);
-
-    async function loadStructures() {
-        showLoader(true);
-        try {
-            const response = await fetch(API_URL_GET);
-            if (!response.ok) throw new Error('Failed to fetch structures from the server.');
-            const rawStructures = await response.json();
-
-            // Convert API data to the JSON structure used by the editor
-            structureData = rawStructures.map(s => {
-                // The API returns pre-formatted JSON, but we'll ensure data types are correct
-                // and parse string-based formats if they exist.
-                
-                // Parse materials from string "1:1;3:1;5:3"
-                let materials = [];
-                if (typeof s.materials === 'string' && s.materials) {
-                    materials = s.materials.split(';').map(pair => {
-                        const parts = pair.split(':');
-                        return parts.length === 2 ? { index: parseInt(parts[0], 10), qty: parseFloat(parts[1]) } : null;
-                    }).filter(Boolean);
-                } else if (Array.isArray(s.materials)) {
-                    materials = s.materials; // Already in correct format
-                }
-
-                // Parse labour from string "1:1;3:1;5:3"
-                let labour = [];
-                if (typeof s.labour === 'string' && s.labour) {
-                    labour = s.labour.split(';').map(pair => {
-                        const parts = pair.split(':');
-                        return parts.length === 2 ? { index: parseInt(parts[0], 10), qty: parseFloat(parts[1]) } : null;
-                    }).filter(Boolean);
-                } else if (Array.isArray(s.labour)) {
-                    labour = s.labour; // Already in correct format
-                }
-
-                return {
-                    id: s.id || '',
-                    name: s.name || '',
-                    description: s.description || '',
-                    voltage: s.voltage || '', // Expecting a single string from the API
-                    materials: materials,
-                    labour: labour
-                };
-            });
-
-            renderEditor();
-
-        } catch (error) {
-            showNotification(error.message, 'error');
-            console.error(error);
-        } finally {
-            showLoader(false);
-        }
-    }
-
-    function renderEditor() {
-        const editor = document.getElementById('structure-editor');
-        editor.innerHTML = '';
-        structureData.forEach((structure, index) => {
-            const card = document.createElement('div');
-            card.className = 'structure-card';
-            card.dataset.index = index;
-            card.innerHTML = `
-                <div class="structure-header">
-                    <span>ID: ${structure.id}</span>
-                    <button class="btn btn-danger" onclick="deleteStructure(${index})">Delete</button>
+    <div class="admin-container">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="header-content">
+                <h1>🛠️ EstiGen Admin Panel</h1>
+                <div class="header-actions">
+                    <a href="index.html" class="btn btn-secondary">← Back to App</a>
+                    <a href="admin.html" class="btn btn-secondary">Old Admin</a>
                 </div>
-                <div class="structure-body">
-                    <div class="form-group">
-                        <label>ID (unique, no spaces)</label>
-                        <input type="text" data-field="id" value="${structure.id}">
+            </div>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="tab-navigation">
+            <button class="tab-btn active" data-table="structures">
+                📋 Structures
+            </button>
+            <button class="tab-btn" data-table="materials">
+                🔩 Materials
+            </button>
+            <button class="tab-btn" data-table="labour">
+                👷 Labour
+            </button>
+            <button class="tab-btn" data-table="estimates">
+                💰 Estimates
+            </button>
+        </nav>
+
+        <!-- Notification Bar -->
+        <div id="notification" class="notification hidden"></div>
+
+        <!-- Main Content Area -->
+        <main class="admin-main">
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <div class="search-box">
+                        <input type="text" id="search-input" placeholder="Search...">
+                        <button id="search-btn" class="btn btn-icon">🔍</button>
                     </div>
-                    <div class="form-group">
-                        <label>Name</label>
-                        <input type="text" data-field="name" value="${structure.name}">
-                    </div>
-                    <div class="form-group">
-                        <label>Description</label>
-                        <input type="text" data-field="description" value="${structure.description}">
-                    </div>
-                    <div class="form-group">
-                        <label>Voltage</label>
-                        <input type="text" data-field="voltage" value="${structure.voltage || ''}">
-                    </div>
-                    <div class="form-group">
-                        <label>Materials (JSON format)</label>
-                        <textarea data-field="materials">${JSON.stringify(structure.materials, null, 2)}</textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Labour (JSON format)</label>
-                        <textarea data-field="labour">${JSON.stringify(structure.labour, null, 2)}</textarea>
-                    </div>
+                    <select id="filter-select" class="filter-select">
+                        <option value="">All Categories</option>
+                    </select>
                 </div>
-            `;
-            editor.appendChild(card);
-        });
-    }
+                <div class="toolbar-right">
+                    <button id="add-new-btn" class="btn btn-primary">+ Add New</button>
+                    <button id="delete-selected-btn" class="btn btn-danger" disabled>🗑️ Delete Selected</button>
+                    <button id="export-btn" class="btn btn-secondary">📥 Export</button>
+                    <button id="refresh-btn" class="btn btn-icon">🔄</button>
+                </div>
+            </div>
 
-    function addNewStructure() {
-        const newStructure = {
-            id: `new_structure_${Date.now()}`,
-            name: "New Structure",
-            description: "",
-            voltage: [],
-            materials: [],
-            labour: []
-        };
-        structureData.unshift(newStructure); // Add to the beginning of the array
-        renderEditor();
-        window.scrollTo(0, 0);
-    }
+            <!-- Loading State -->
+            <div id="loading-state" class="loading-state hidden">
+                <div class="spinner"></div>
+                <p>Loading data...</p>
+            </div>
 
-    function deleteStructure(index) {
-        if (confirm('Are you sure you want to delete this structure? This action cannot be undone.')) {
-            structureData.splice(index, 1);
-            renderEditor();
-        }
-    }
+            <!-- Data Table Container -->
+            <div id="table-container" class="table-container">
+                <!-- Table will be dynamically inserted here -->
+            </div>
 
-    async function saveAllChanges() {
-        if (!collectDataFromUI()) {
-            return; // Stop if data collection failed (e.g., invalid JSON)
-        }
+            <!-- Pagination -->
+            <div class="pagination" id="pagination">
+                <div class="pagination-info">
+                    Showing <span id="showing-start">0</span>-<span id="showing-end">0</span> of <span
+                        id="total-records">0</span>
+                </div>
+                <div class="pagination-controls">
+                    <button id="prev-page" class="btn btn-secondary" disabled>← Previous</button>
+                    <span class="page-numbers" id="page-numbers"></span>
+                    <button id="next-page" class="btn btn-secondary" disabled>Next →</button>
+                </div>
+            </div>
+        </main>
 
-        showLoader(true, 'Saving...');
-        try {
-            // The API endpoint expects each structure to have a single voltage string.
-            const payload = structureData.map(s => {
-                const materialsStr = (s.materials || []).map(m => `${m.index}:${m.qty}`).join(';');
-                const labourStr = (s.labour || []).map(l => `${l.index}:${l.qty}`).join(';');
-                return {
-                    id: s.id,
-                    name: s.name,
-                    description: s.description,
-                    voltage: s.voltage, // Send the single voltage string directly
-                    materials: materialsStr,
-                    labour: labourStr
-                };
-            });
+        <!-- Modal for Add/Edit -->
+        <div id="edit-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modal-title">Edit Record</h2>
+                    <button class="modal-close" onclick="closeModal()">×</button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    <!-- Form fields will be dynamically inserted -->
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button class="btn btn-primary" id="save-record-btn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            const response = await fetch(API_URL_UPDATE, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.message || 'Server returned an error.');
-            }
-
-            showNotification(result.message, 'success');
-            await loadStructures(); // Reload to confirm changes and get fresh data
-
-        } catch (error) {
-            showNotification(`Save failed: ${error.message}`, 'error');
-            console.error(error);
-        } finally {
-            showLoader(false);
-        }
-    }
-
-    function collectDataFromUI() {
-        const cards = document.querySelectorAll('.structure-card');
-        const newStructureData = [];
-        let allValid = true;
-
-        for (const card of cards) {
-            const structure = {}; // Start with a fresh object
-
-            // --- Text and simple inputs ---
-            structure.id = card.querySelector('[data-field="id"]').value.trim();
-            structure.name = card.querySelector('[data-field="name"]').value.trim();
-            structure.description = card.querySelector('[data-field="description"]').value.trim();
-            
-            // --- Voltage string ---
-            structure.voltage = card.querySelector('[data-field="voltage"]').value.trim();
-
-            // --- JSON Textareas (Materials & Labour) ---
-            try {
-                const materialsText = card.querySelector('[data-field="materials"]').value;
-                structure.materials = JSON.parse(materialsText);
-
-                const labourText = card.querySelector('[data-field="labour"]').value;
-                structure.labour = JSON.parse(labourText);
-                
-                newStructureData.push(structure);
-            } catch (e) {
-                allValid = false;
-                const textarea = e.message.includes('materials') 
-                    ? card.querySelector('[data-field="materials"]') 
-                    : card.querySelector('[data-field="labour"]');
-                
-                // Highlight the problematic field and show an alert
-                textarea.style.border = '2px solid var(--error-color)';
-                alert(`Invalid JSON format in structure with ID '${structure.id}'. Please correct it before saving.\n\nError: ${e.message}`);
-                
-                // Reset style after a few seconds
-                setTimeout(() => { textarea.style.border = '1px solid var(--medium-gray)'; }, 5000);
-                
-                break; // Stop processing further cards
-            }
-        }
-
-        if (allValid) {
-            structureData = newStructureData; // Replace the old data with the newly collected data
-            return true;
-        }
-        return false;
-    }
-
-    // --- CSV Parser Utility ---
-    function parseCSV(text) {
-        const lines = text.trim().split('\n');
-        const headers = lines[0].split(',').map(h => h.trim());
-        const rows = [];
-        for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',').map(v => v.trim());
-            if (values.length === headers.length) {
-                const row = {};
-                for (let j = 0; j < headers.length; j++) {
-                    row[headers[j]] = values[j];
-                }
-                rows.push(row);
-            }
-        }
-        return rows;
-    }
-
-    // --- UI Helpers ---
-    function showLoader(show, text = 'Loading...') {
-        const loader = document.getElementById('loader');
-        const editor = document.getElementById('structure-editor');
-        if (show) {
-            loader.innerHTML = `<p>${text}</p>`;
-            loader.style.display = 'block';
-            editor.style.display = 'none';
-        } else {
-            loader.style.display = 'none';
-            editor.style.display = 'block';
-        }
-    }
-
-    function showNotification(message, type = 'success') {
-        const notification = document.getElementById('notification');
-        notification.textContent = message;
-        notification.className = `notification ${type}`;
-        notification.style.display = 'block';
-
-        setTimeout(() => {
-            notification.style.display = 'none';
-        }, 5000);
-    }
-
-</script>
-
+    <script src="admin-new.js"></script>
 </body>
+
 </html>
