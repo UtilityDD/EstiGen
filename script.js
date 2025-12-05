@@ -509,7 +509,7 @@ function downloadEstimatePDF() {
 
     // Configure PDF options
     const options = {
-        margin: [10, 10, 15, 10], // top, left, bottom, right in mm
+        margin: [10, 10, 10, 10], // top, left, bottom, right in mm
         filename: filename,
         image: {
             type: 'jpeg',
@@ -519,16 +519,20 @@ function downloadEstimatePDF() {
             scale: 2,  // Higher scale for better quality
             useCORS: true,
             letterRendering: true,
-            logging: false
+            logging: false,
+            scrollY: 0,
+            scrollX: 0,
+            windowHeight: element.scrollHeight
         },
         jsPDF: {
             unit: 'mm',
             format: 'a4',
-            orientation: 'portrait'
+            orientation: 'portrait',
+            compress: true
         },
         pagebreak: {
-            mode: ['avoid-all', 'css', 'legacy'],
-            before: '.estimate-totals'  // Force page break before Cost Summary
+            mode: ['css', 'legacy'],
+            avoid: ['tr', '.no-break']
         }
     };
 
