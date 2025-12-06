@@ -1,13 +1,69 @@
 const express = require('express');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 const { supabase } = require('./supabase-config');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ============================================
+// RATE LIMITING CONFIGURATION
+// ============================================
+
+// General API rate limiter - applies to all /api/* routes
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: {
+        error: 'Too many requests',
+        message: 'You have exceeded the rate limit. Please try again later.',
+        retryAfter: '15 minutes'
+    },
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    // Skip rate limiting for successful responses to allow more legitimate traffic
+    skipSuccessfulRequests: false,
+});
+
+// Strict limiter for data modification operations (POST, PUT, DELETE)
+const strictLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 10, // Limit each IP to 10 requests per minute
+    message: {
+        error: 'Too many requests',
+        message: 'You are making too many changes. Please wait a moment.',
+        retryAfter: '1 minute'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Very strict limiter for expensive operations like estimate generation
+const generateLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute window
+    max: 1, // Max 1 estimate generation per minute
+    message: {
+        error: 'Rate limit exceeded',
+        message: 'You can only generate 1 estimate per minute. Please wait before generating another.',
+        retryAfter: '1 minute'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).json({
+            error: 'Rate limit exceeded',
+            message: 'You can only generate 1 estimate per minute. Please wait before generating another.',
+            retryAfter: 60 // seconds
+        });
+    }
+});
+
 // Middleware to parse JSON bodies and serve static files
 app.use(express.json());
 app.use(express.static(__dirname));
+
+// Apply general rate limiter to all API routes
+app.use('/api/', apiLimiter);
 
 // Import and use estimates routes
 const estimatesRoutes = require('./routes/estimates');
@@ -58,7 +114,7 @@ app.get('/api/config', (req, res) => {
 });
 
 // API endpoint to POST (update) the structure data to Supabase
-app.post('/api/structures/update', async (req, res) => {
+app.post('/api/structures/update', strictLimiter, async (req, res) => {
     const updatedStructures = req.body;
 
     if (!Array.isArray(updatedStructures)) {
@@ -96,7 +152,7 @@ app.post('/api/structures/update', async (req, res) => {
 });
 
 // API endpoint to generate estimate from posted structures and library
-app.post('/api/generate-estimate', async (req, res) => {
+app.post('/api/generate-estimate', generateLimiter, async (req, res) => {
     try {
         const payload = req.body || {};
         const structures = payload.structures || {};
@@ -267,7 +323,7 @@ app.get('/api/admin/labour', async (req, res) => {
 });
 
 // Update material (single record)
-app.put('/api/admin/materials/:id', async (req, res) => {
+app.put('/api/admin/materials/:id', strictLimiter, async (req, res) => {
     try {
         const { id } = req.params;
         const updatedData = req.body;
@@ -289,7 +345,7 @@ app.put('/api/admin/materials/:id', async (req, res) => {
 });
 
 // Update labour (single record)
-app.put('/api/admin/labour/:id', async (req, res) => {
+app.put('/api/admin/labour/:id', strictLimiter, async (req, res) => {
     try {
         const { id } = req.params;
         const updatedData = req.body;
@@ -311,7 +367,7 @@ app.put('/api/admin/labour/:id', async (req, res) => {
 });
 
 // Delete material
-app.delete('/api/admin/materials/:id', async (req, res) => {
+app.delete('/api/admin/materials/:id', strictLimiter, async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -330,7 +386,7 @@ app.delete('/api/admin/materials/:id', async (req, res) => {
 });
 
 // Delete labour
-app.delete('/api/admin/labour/:id', async (req, res) => {
+app.delete('/api/admin/labour/:id', strictLimiter, async (req, res) => {
     try {
         const { id } = req.params;
 

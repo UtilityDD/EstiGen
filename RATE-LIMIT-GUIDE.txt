@@ -1,0 +1,373 @@
+# RATE LIMITING REFERENCE GUIDE
+# EstiGen Application - Anti-Abuse Protection
+# Last Updated: December 6, 2025
+
+================================================================================
+                          WHAT IS RATE LIMITING?
+================================================================================
+
+Rate limiting is a security technique that controls how many requests a user
+(identified by IP address) can make to your server within a specific time window.
+
+Think of it like a speed limit for API requests - it prevents abuse, protects
+your server resources, and ensures fair usage for all users.
+
+
+================================================================================
+                        WHY WE NEED RATE LIMITING
+================================================================================
+
+1. SECURITY PROTECTION
+   - Prevents DDoS (Distributed Denial of Service) attacks
+   - Stops brute force password attempts
+   - Blocks automated bots from scraping data
+
+2. COST CONTROL
+   - Prevents excessive Supabase API usage (which costs money)
+   - Reduces server load and bandwidth usage
+   - Avoids surprise bills from cloud providers
+
+3. FAIR USAGE
+   - Ensures all users get equal access
+   - Prevents one user from monopolizing resources
+   - Stops accidental infinite loops in client code
+
+4. DATA INTEGRITY
+   - Prevents rapid-fire updates that could corrupt data
+   - Gives time for database transactions to complete properly
+   - Reduces race conditions
+
+
+================================================================================
+                    CURRENT RATE LIMIT CONFIGURATION
+================================================================================
+
+Three tiers of rate limiting are implemented in server.js:
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 1. GENERAL API LIMITER (apiLimiter)                                    │
+│    Applied to: All /api/* routes                                       │
+│    Time Window: 15 minutes                                            │
+│    Max Requests: 100 requests per IP                                   │
+│    Purpose: General protection for all API endpoints                   │
+│    User Message: "Too many requests. Try again in 15 minutes."        │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 2. STRICT LIMITER (strictLimiter)                                      │
+│    Applied to: Data modification endpoints (POST/PUT/DELETE)           │
+│    Time Window: 1 minute                                               │
+│    Max Requests: 10 requests per IP                                    │
+│    Purpose: Protect against rapid data changes                         │
+│    User Message: "Too many changes. Please wait a moment."            │
+│                                                                         │
+│    Endpoints Protected:                                                │
+│    - POST /api/structures/update                                        │
+│    - PUT /api/admin/materials/:id                                      │
+│    - PUT /api/admin/labour/:id                                         │
+│    - DELETE /api/admin/materials/:id                                   │
+│    - DELETE /api/admin/labour/:id                                      │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 3. GENERATE LIMITER (generateLimiter)                                  │
+│    Applied to: Estimate generation endpoint                            │
+│    Time Window: 1 minute                                               │
+│    Max Requests: 1 request per IP (VERY STRICT)                       │
+│    Purpose: Protect expensive database operations                      │
+│    User Message: "You can only generate 1 estimate per minute."       │
+│                                                                         │
+│    Endpoints Protected:                                                │
+│    - POST /api/generate-estimate                                        │
+└─────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+                          HOW IT WORKS
+================================================================================
+
+EXAMPLE 1: Normal User Behavior ✅
+   Time    | Action                        | Result
+   --------|-------------------------------|----------------------------------
+   10:00   | Generate estimate             | ✅ Success (1/1)
+   10:01   | Generate another estimate     | ✅ Success (wait 1 min from 10:00)
+   10:02   | Try to generate (too soon)    | ❌ Blocked until 10:01
+   10:05   | View saved estimates          | ✅ Success (all GET requests OK)
+
+
+EXAMPLE 2: Impatient User Clicking Too Fast ⚠️
+   Time    | Action                        | Result
+   --------|-------------------------------|----------------------------------
+   10:00   | Clicks "Generate" 10 times    | ✅ First 1 succeeds
+           | (rapid clicks)                 | ❌ Next 9 blocked with message:
+           |                               |    "Wait 1 minute before generating"
+   10:01   | Can generate again            | ✅ Counter resets
+
+
+EXAMPLE 3: Attacker Attempting DDoS 🛡️
+   Time    | Action                        | Result
+   --------|-------------------------------|----------------------------------
+   10:00   | Sends 10,000 requests         | ✅ First 100 succeed
+           | in 1 second                    | ❌ Next 9,900 blocked
+           |                               | 🔒 Server stays online for others
+   10:15   | Limits reset                  | ⚠️ Same pattern repeats if needed
+
+
+================================================================================
+                        RESPONSE HEADERS
+================================================================================
+
+When rate limiting is active, the following headers are sent to clients:
+
+RateLimit-Limit: 100              # Maximum requests allowed
+RateLimit-Remaining: 87           # Requests remaining in current window
+RateLimit-Reset: 1701849600       # Unix timestamp when limit resets
+
+
+When limit is exceeded, HTTP Status 429 is returned:
+
+{
+    "error": "Rate limit exceeded",
+    "message": "You can only generate 1 estimate per minute.",
+    "retryAfter": 60
+}
+
+
+================================================================================
+                     MODIFYING RATE LIMITS
+================================================================================
+
+To change rate limits, edit server.js around lines 10-58:
+
+INCREASE LIMITS (for testing or high-traffic scenarios):
+    
+    const apiLimiter = rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 200,  // ← Change from 100 to 200
+        ...
+    });
+
+DECREASE WINDOW (faster reset):
+    
+    const generateLimiter = rateLimit({
+        windowMs: 30 * 1000,  // ← Change from 1 minute to 30 seconds
+        max: 1,
+        ...
+    });
+
+INCREASE STRICTNESS (for production):
+    
+    const strictLimiter = rateLimit({
+        windowMs: 1 * 60 * 1000,
+        max: 5,  // ← Change from 10 to 5
+        ...
+    });
+
+
+================================================================================
+                        BEST PRACTICES
+================================================================================
+
+✅ DO:
+   - Keep limits reasonable for legitimate users
+   - Return clear error messages explaining the limit
+   - Use different limits for different endpoint types
+   - Monitor rate limit hits to adjust settings
+   - Whitelist trusted IPs if needed (for APIs)
+
+❌ DON'T:
+   - Make limits too strict (frustrates real users)
+   - Apply same limit to all endpoints
+   - Forget to inform users about limits in UI
+   - Skip rate limiting on expensive operations
+   - Ignore the metrics (helps detect attacks)
+
+
+================================================================================
+                        TESTING RATE LIMITS
+================================================================================
+
+Method 1: Using Browser DevTools
+   1. Open browser console
+   2. Run this code:
+   
+      for(let i = 0; i < 10; i++) {
+          fetch('/api/generate-estimate', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({structures: {}, structureLibrary: []})
+          })
+          .then(r => console.log(`Request ${i}: ${r.status}`));
+      }
+   
+   3. You should see first 1 succeed (200), rest fail (429)
+
+
+Method 2: Using curl (Command Line)
+   
+   # Send 6 requests quickly
+   for i in {1..6}; do
+       curl -X POST http://localhost:3000/api/generate-estimate \
+            -H "Content-Type: application/json" \
+            -d '{"structures":{},"structureLibrary":[]}'
+       echo ""
+   done
+
+
+Method 3: Using Postman or Thunder Client
+   1. Create POST request to /api/generate-estimate
+   2. Click "Send" 6 times quickly
+   3. 2nd request should return 429 error (must wait 1 minute)
+
+
+================================================================================
+                        MONITORING & METRICS
+================================================================================
+
+To track rate limit usage, add logging:
+
+    const apiLimiter = rateLimit({
+        ...existing config...,
+        handler: (req, res) => {
+            console.log(`⚠️ Rate limit hit: IP=${req.ip}, Path=${req.path}`);
+            res.status(429).json({...});
+        }
+    });
+
+
+Recommended metrics to track:
+   - Number of 429 responses per hour
+   - IPs that frequently hit limits (potential attackers)
+   - Peak usage times
+   - Average requests per user
+
+
+================================================================================
+                        PRODUCTION RECOMMENDATIONS
+================================================================================
+
+For Production Environment:
+
+1. TIGHTER LIMITS:
+   - apiLimiter: 50 requests per 15 minutes (vs current 100)
+   - strictLimiter: 5 requests per minute (vs current 10)
+   - generateLimiter: 1 request per minute (CURRENT - already strict!)
+
+2. ADD IP WHITELISTING:
+   Skip rate limits for trusted services/admins
+   
+   const apiLimiter = rateLimit({
+       skip: (req) => {
+           const trustedIPs = ['192.168.1.100', '10.0.0.1'];
+           return trustedIPs.includes(req.ip);
+       },
+       ...
+   });
+
+3. IMPLEMENT REDIS STORE:
+   For distributed systems (multiple servers)
+   
+   npm install rate-limit-redis
+   
+   const RedisStore = require('rate-limit-redis');
+   const apiLimiter = rateLimit({
+       store: new RedisStore({
+           client: redisClient
+       }),
+       ...
+   });
+
+4. ADD CUSTOM KEYS:
+   Rate limit by user ID instead of IP (after login)
+   
+   const apiLimiter = rateLimit({
+       keyGenerator: (req) => {
+           return req.user?.id || req.ip;
+       },
+       ...
+   });
+
+
+================================================================================
+                        TROUBLESHOOTING
+================================================================================
+
+PROBLEM: "Rate limit not working"
+SOLUTION: 
+   - Ensure express-rate-limit is installed: npm install express-rate-limit
+   - Check if limiter is applied BEFORE route handlers
+   - Verify app.use('/api/', apiLimiter) is called
+
+PROBLEM: "Rate limit too strict, legitimate users blocked"
+SOLUTION:
+   - Increase max requests or time window
+   - Check if you're behind a proxy (all requests show same IP)
+   - Add trust proxy: app.set('trust proxy', 1)
+
+PROBLEM: "Want different limits for different users"
+SOLUTION:
+   - Use keyGenerator with user tiers:
+     const max = req.user?.isPremium ? 200 : 100;
+
+PROBLEM: "Testing is blocked by rate limits"
+SOLUTION:
+   - Disable in development:
+     if (process.env.NODE_ENV !== 'production') {
+         // skip rate limiting
+     }
+
+
+================================================================================
+                        RELATED FILES
+================================================================================
+
+server.js (lines 3, 10-62, 117, 155, 326+)
+   - Contains all rate limiter configurations
+   - Applied to various endpoints
+
+routes/estimates.js
+   - Could add specific limiters for estimate routes
+
+package.json
+   - Dependency: "express-rate-limit": "^8.2.1"
+
+
+================================================================================
+                        ADDITIONAL RESOURCES
+================================================================================
+
+Official Documentation:
+   https://github.com/express-rate-limit/express-rate-limit
+
+Security Best Practices:
+   https://owasp.org/www-community/controls/Blocking_Brute_Force_Attacks
+
+Rate Limiting Strategies:
+   https://cloud.google.com/architecture/rate-limiting-strategies-techniques
+
+
+================================================================================
+                        QUICK REFERENCE
+================================================================================
+
+Current Limits Summary:
+
+┌──────────────────┬──────────┬────────┬────────────────────────────┐
+│ Limiter Type     │ Window   │ Max    │ Applies To                 │
+├──────────────────┼──────────┼────────┼────────────────────────────┤
+│ apiLimiter       │ 15 min   │ 100    │ All /api/* routes          │
+│ strictLimiter    │ 1 min    │ 10     │ POST/PUT/DELETE endpoints  │
+│ generateLimiter  │ 1 min    │ 1      │ /api/generate-estimate     │
+└──────────────────┴──────────┴────────┴────────────────────────────┘
+
+
+For Questions or Issues:
+   - Check server.js for current configuration
+   - Test using browser console or curl
+   - Monitor server logs for 429 responses
+   - Adjust limits based on actual usage patterns
+
+
+================================================================================
+                              END OF GUIDE
+================================================================================
