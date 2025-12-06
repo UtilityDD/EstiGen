@@ -16,7 +16,7 @@
                 <h1>🛠️ EstiGen Admin Panel</h1>
                 <div class="header-actions">
                     <a href="index.html" class="btn btn-secondary">← Back to App</a>
-                    
+                    <button class="btn btn-danger" onclick="logout()">Logout</button>
                 </div>
             </div>
         </header>
@@ -101,6 +101,12 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+    <script>
+        // Check auth immediately
+        checkAuth();
+    </script>
     <script src="admin-new.js"></script>
 </body>
 

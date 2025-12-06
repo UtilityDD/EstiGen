@@ -49,6 +49,14 @@ app.get('/api/structures', async (req, res) => {
     }
 });
 
+// API endpoint to get public Supabase config for frontend
+app.get('/api/config', (req, res) => {
+    res.json({
+        supabaseUrl: process.env.SUPABASE_URL,
+        supabaseAnonKey: process.env.SUPABASE_ANON_KEY
+    });
+});
+
 // API endpoint to POST (update) the structure data to Supabase
 app.post('/api/structures/update', async (req, res) => {
     const updatedStructures = req.body;

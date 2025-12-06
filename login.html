@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - EstiGen</title>
+    <link rel="stylesheet" href="admin-styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--light-gray) 0%, #cfd8dc 100%);
+        }
+
+        .login-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-header {
+            margin-bottom: 2rem;
+        }
+
+        .login-header h1 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-full {
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-card">
+        <div class="login-header">
+            <h1>🔐 Admin Access</h1>
+            <p>Please sign in to continue</p>
+        </div>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" required placeholder="admin@example.com">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" required placeholder="********">
+            </div>
+            <button type="submit" class="btn btn-primary btn-full" id="loginBtn">
+                Sign In
+            </button>
+        </form>
+        <div id="message" class="notification hidden" style="margin-top: 1rem;"></div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script>
+        // Specific login page logic
+        const loginForm = document.getElementById('loginForm');
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('loginBtn');
+            const msg = document.getElementById('message');
+
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Signing in...';
+                await login(email, password);
+                // Redirect handled in login() if successful
+            } catch (error) {
+                msg.textContent = error.message;
+                msg.className = 'notification error';
+                msg.style.display = 'flex';
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
+            }
+        });
+
+        // Check if already logged in
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await getCurrentUser();
+            if (user) {
+                window.location.href = 'admin.html';
+            }
+        });
+    </script>
+</body>
+
+</html>
