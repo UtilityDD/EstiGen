@@ -24,8 +24,11 @@ const estimate = {
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        // Get user ID for multi-user support
+        const userId = userSession.getUserId();
+
         // Fetch all structures directly from the Supabase-backed API
-        const response = await fetch('/api/structures');
+        const response = await fetch(`/api/structures?userId=${userId}`);
         if (!response.ok) {
             throw new Error(`API request failed with status ${response.status}: ${await response.text()}`);
         }
@@ -261,49 +264,51 @@ function renderStructureList() {
     console.log("First 5 structures from library with their voltages:", JSON.stringify(structureLibrary.slice(0, 5).map(s => ({ name: s.name, voltage: s.voltage })), null, 2));
     // --- END DEBUGGING LOG ---
 
-    const relevantStructures = structureLibrary.filter(s =>
-        s.voltage.some(v => estimate.voltageLevels.includes(v))
-    );
+    try {
+        const relevantStructures = structureLibrary.filter(s => {
+            if (!s || !Array.isArray(s.voltage)) return false;
+            return s.voltage.some(v => estimate.voltageLevels.includes(v));
+        });
 
-    if (relevantStructures.length === 0) {
-        tabsContainer.innerHTML = '<p>No structures available for the selected voltage levels.</p>';
-        return;
-    }
+        if (relevantStructures.length === 0) {
+            tabsContainer.innerHTML = '<p>No structures available for the selected voltage levels.</p>';
+            return;
+        }
 
-    // Create tab structure
-    const tabButtons = document.createElement('div');
-    tabButtons.className = 'tab-buttons';
-    const tabContent = document.createElement('div');
-    tabContent.className = 'tab-content';
+        // Create tab structure
+        const tabButtons = document.createElement('div');
+        tabButtons.className = 'tab-buttons';
+        const tabContent = document.createElement('div');
+        tabContent.className = 'tab-content';
 
-    // --- Create R/L (Route Length) Tab ---
-    const applicableRLVoltages = ['33 kV', '11 kV', 'LT 3-Ph', 'LT 1-Ph'];
-    const rlVoltagesToShow = estimate.voltageLevels.filter(v => applicableRLVoltages.includes(v));
+        // --- Create R/L (Route Length) Tab ---
+        const applicableRLVoltages = ['33 kV', '11 kV', 'LT 3-Ph', 'LT 1-Ph'];
+        const rlVoltagesToShow = estimate.voltageLevels.filter(v => applicableRLVoltages.includes(v));
 
-    if (rlVoltagesToShow.length > 0) {
-        const rlButton = document.createElement('button');
-        rlButton.className = 'tab-button active'; // Make R/L active by default and stay active
-        rlButton.textContent = 'R/L';
-        rlButton.dataset.voltage = 'RL';
-        tabButtons.appendChild(rlButton);
+        if (rlVoltagesToShow.length > 0) {
+            const rlButton = document.createElement('button');
+            rlButton.className = 'tab-button active'; // Make R/L active by default and stay active
+            rlButton.textContent = 'R/L';
+            rlButton.dataset.voltage = 'RL';
+            tabButtons.appendChild(rlButton);
 
-        const rlPane = document.createElement('div');
-        rlPane.className = 'tab-pane';
-        rlPane.style.display = 'block'; // Show its content
-        rlPane.dataset.voltage = 'RL';
+            const rlPane = document.createElement('div');
+            rlPane.className = 'tab-pane';
+            rlPane.style.display = 'block'; // Show its content
+            rlPane.dataset.voltage = 'RL';
 
-        // Conductor options - can be expanded
-        const conductorOptions = [
-            'Rabbit', 'Weasel', 'Dog', 'Panther', 'Zebra', // ACSR
-            '3x95+1x50+1x16', '3x150+1x70+1x16', '3x240+1x95+1x16', // LT AB Cable
-            '1x11', '1x16', '1x25', '1x35', '1x50', '1x70', '1x95', '1x120', '1x150', '1x185', '1x240', '1x300', '1x400' // XLPE / PVC Cables
-        ];
-        const conductorSelectOptions = conductorOptions.map(c => `<option value="${c}">${c}</option>`).join('');
+            // Conductor options - can be expanded
+            const conductorOptions = [
+                'Rabbit', 'Weasel', 'Dog', 'Panther', 'Zebra', // ACSR
+                '3x95+1x50+1x16', '3x150+1x70+1x16', '3x240+1x95+1x16', // LT AB Cable
+                '1x11', '1x16', '1x25', '1x35', '1x50', '1x70', '1x95', '1x120', '1x150', '1x185', '1x240', '1x300', '1x400' // XLPE / PVC Cables
+            ];
+            const conductorSelectOptions = conductorOptions.map(c => `<option value="${c}">${c}</option>`).join('');
 
-        let rlTableRows = '';
-        rlVoltagesToShow.forEach(voltage => {
-            const rlData = estimate.routeLengths[voltage] || { length: 0, conductor: '' };
-            rlTableRows += `
+            let rlTableRows = '';
+            rlVoltagesToShow.forEach(voltage => {
+                const rlData = estimate.routeLengths[voltage] || { length: 0, conductor: '' };
+                rlTableRows += `
                 <tr>
                     <td>${voltage}</td>
                     <td><input type="number" id="rl-length-${voltage}" min="0" step="0.01" value="${rlData.length}" onchange="updateRouteLength('${voltage}', this.value)"></td>
@@ -314,9 +319,9 @@ function renderStructureList() {
                         </select>
                     </td>
                 </tr>`;
-        });
+            });
 
-        rlPane.innerHTML = `
+            rlPane.innerHTML = `
                 <table class="rl-table">
                     <thead>
                         <tr>
@@ -328,49 +333,49 @@ function renderStructureList() {
                     <tbody>${rlTableRows}</tbody>
                 </table>`;
 
-        tabContent.appendChild(rlPane);
-    }
+            tabContent.appendChild(rlPane);
+        }
 
-    tabsContainer.appendChild(tabButtons);
-    tabsContainer.appendChild(tabContent);
+        tabsContainer.appendChild(tabButtons);
+        tabsContainer.appendChild(tabContent);
 
-    // Group and render
-    const groupedStructures = {};
-    estimate.voltageLevels.forEach(voltage => {
-        groupedStructures[voltage] = relevantStructures.filter(s => s.voltage.includes(voltage));
-    });
+        // Group and render
+        const groupedStructures = {};
+        estimate.voltageLevels.forEach(voltage => {
+            groupedStructures[voltage] = relevantStructures.filter(s => s.voltage.includes(voltage));
+        });
 
-    // If R/L tab exists, it's already active. If not, make the first voltage tab active.
-    let isFirstTab = rlVoltagesToShow.length === 0; // Correctly initialize isFirstTab
-    for (const voltage in groupedStructures) {
-        const structures = groupedStructures[voltage];
-        if (structures.length === 0) continue;
+        // If R/L tab exists, it's already active. If not, make the first voltage tab active.
+        let isFirstTab = rlVoltagesToShow.length === 0; // Correctly initialize isFirstTab
+        for (const voltage in groupedStructures) {
+            const structures = groupedStructures[voltage];
 
-        // Create tab button
-        const button = document.createElement('button');
-        button.className = 'tab-button';
-        button.textContent = voltage;
-        button.dataset.voltage = voltage;
-        tabButtons.appendChild(button);
 
-        // Create tab pane
-        const pane = document.createElement('div');
-        pane.className = 'tab-pane';
-        pane.dataset.voltage = voltage;
+            // Create tab button
+            const button = document.createElement('button');
+            button.className = 'tab-button';
+            button.textContent = voltage;
+            button.dataset.voltage = voltage;
+            tabButtons.appendChild(button);
 
-        let structureTableRows = '';
-        structures.forEach(structure => {
-            const quantity = estimate.structures[structure.id] || 0;
-            structureTableRows += `
+            // Create tab pane
+            const pane = document.createElement('div');
+            pane.className = 'tab-pane';
+            pane.dataset.voltage = voltage;
+
+            let structureTableRows = '';
+            structures.forEach(structure => {
+                const quantity = estimate.structures[structure.id] || 0;
+                structureTableRows += `
                     <tr>
                         <td>${structure.id}</td>
                         <td>${structure.name}</td>
                         <td><input type="number" id="qty-${structure.id}" min="0" value="${quantity}" onchange="updateStructureQuantity('${structure.id}', this.value)" style="text-align: center;"></td>
                     </tr>
                 `;
-        });
+            });
 
-        pane.innerHTML = `
+            pane.innerHTML = `
                 <table class="rl-table">
                     <thead>
                         <tr>
@@ -385,37 +390,41 @@ function renderStructureList() {
                 </table>
             `;
 
-        tabContent.appendChild(pane);
+            tabContent.appendChild(pane);
 
-        if (isFirstTab) {
-            button.classList.add('active');
-            pane.style.display = 'block';
-            isFirstTab = false;
-            isFirstTab = false;
+            if (isFirstTab) {
+                button.classList.add('active');
+                pane.style.display = 'block';
+                isFirstTab = false;
+                isFirstTab = false;
+            }
         }
+
+        // After rendering, set the selected conductor values
+        estimate.voltageLevels.forEach(voltage => {
+            const rlData = estimate.routeLengths[voltage];
+            if (rlData && rlData.conductor) {
+                document.getElementById(`rl-conductor-${voltage}`).value = rlData.conductor;
+            }
+        });
+        // Add event listener for tab clicks
+        tabButtons.addEventListener('click', (e) => {
+            if (e.target.matches('.tab-button')) {
+                const targetVoltage = e.target.dataset.voltage;
+
+                // Deactivate all
+                tabButtons.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                tabContent.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+
+                // Activate target
+                e.target.classList.add('active');
+                tabContent.querySelector(`.tab-pane[data-voltage="${targetVoltage}"]`).style.display = 'block';
+            }
+        });
+    } catch (error) {
+        console.error("Critical error in renderStructureList:", error);
+        alert("An error occurred while loading structures. Please check the console for details.");
     }
-
-    // After rendering, set the selected conductor values
-    estimate.voltageLevels.forEach(voltage => {
-        const rlData = estimate.routeLengths[voltage];
-        if (rlData && rlData.conductor) {
-            document.getElementById(`rl-conductor-${voltage}`).value = rlData.conductor;
-        }
-    });
-    // Add event listener for tab clicks
-    tabButtons.addEventListener('click', (e) => {
-        if (e.target.matches('.tab-button')) {
-            const targetVoltage = e.target.dataset.voltage;
-
-            // Deactivate all
-            tabButtons.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            tabContent.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
-
-            // Activate target
-            e.target.classList.add('active');
-            tabContent.querySelector(`.tab-pane[data-voltage="${targetVoltage}"]`).style.display = 'block';
-        }
-    });
 }
 
 function updateRouteLength(voltage, length) {

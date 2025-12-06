@@ -3,6 +3,7 @@ const path = require('path');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const { body, param, validationResult } = require('express-validator');
+const { mergeUserData, cloneForUser, resetToDefault } = require('./multi-user-helpers');
 const { supabase } = require('./supabase-config');
 
 const app = express();
@@ -42,13 +43,16 @@ app.use(helmet({
             scriptSrc: [
                 "'self'",
                 "'unsafe-inline'", // Needed for inline scripts in HTML
-                "https://cdnjs.cloudflare.com" // For html2pdf.js
+                "https://cdnjs.cloudflare.com", // For html2pdf.js
+                "https://cdn.jsdelivr.net" // For Supabase JS
             ],
+            scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers like onclick
             styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles
             imgSrc: ["'self'", "data:", "https:"],
             connectSrc: [
                 "'self'",
-                process.env.SUPABASE_URL || "https://*.supabase.co" // Allow Supabase API calls
+                process.env.SUPABASE_URL || "https://*.supabase.co", // Allow Supabase API calls
+                "https://cdnjs.cloudflare.com" // Allow fetching source maps
             ],
             fontSrc: ["'self'", "data:"],
             objectSrc: ["'none'"],
@@ -135,24 +139,23 @@ app.use('/api/estimates', estimatesRoutes(supabase));
 // API endpoint to GET the current structure data from Supabase (as JSON)
 app.get('/api/structures', async (req, res) => {
     try {
-        // Fetch from both structure and special_structure tables
-        const [structuresResult, specialStructuresResult] = await Promise.all([
-            supabase.from('structures').select('*'),
-            supabase.from('special_structures').select('*')
+        const userId = req.query.userId || null;
+
+        // Merge default + custom data for user
+        const [structures, specialStructures] = await Promise.all([
+            mergeUserData(supabase, 'structures', userId),
+            mergeUserData(supabase, 'special_structures', userId)
         ]);
 
-        if (structuresResult.error) throw structuresResult.error;
-        if (specialStructuresResult.error) throw specialStructuresResult.error;
+        // Explicitly label special structures
+        const labeledSpecialStructures = specialStructures.map(s => ({
+            ...s,
+            voltage: 'Special Structure'
+        }));
 
-        // Log the count from each table for debugging
-        console.log(`Fetched ${structuresResult.data?.length || 0} rows from 'structures' table.`);
-        console.log(`Fetched ${specialStructuresResult.data?.length || 0} rows from 'special_structures' table.`);
+        const allStructures = [...structures, ...labeledSpecialStructures];
 
-        // Combine both results
-        const allStructures = [
-            ...(structuresResult.data || []),
-            ...(specialStructuresResult.data || [])
-        ];
+        console.log(`Fetched ${allStructures.length} structures for ${userId || 'default'} (${structures.filter(s => s.user_id).length} custom)`);
 
         res.json(allStructures);
     } catch (error) {
@@ -173,6 +176,58 @@ app.get('/api/config', (req, res) => {
         supabaseAnonKey: process.env.SUPABASE_ANON_KEY
     });
 });
+
+// ============================================
+// MULTI-USER ENDPOINTS (Clone & Reset)
+// ============================================
+
+// Clone a default item for user customization
+app.post('/api/:table/clone',
+    [
+        param('table').isIn(['structures', 'special_structures', 'materials', 'labour']).withMessage('Invalid table name'),
+        body('itemId').notEmpty().withMessage('Item ID required'),
+        body('userId').notEmpty().withMessage('User ID required')
+    ],
+    handleValidationErrors,
+    async (req, res) => {
+        try {
+            const { table } = req.params;
+            const { itemId, userId } = req.body;
+
+            const cloned = await cloneForUser(supabase, table, itemId, userId);
+
+            console.log(`✅ Cloned ${table}/${itemId} for user ${userId}`);
+            res.json({ success: true, message: 'Item cloned successfully', data: cloned });
+        } catch (error) {
+            console.error('Error cloning item:', error);
+            res.status(400).json({ success: false, error: error.message });
+        }
+    }
+);
+
+// Reset custom item to default
+app.delete('/api/:table/:id/reset',
+    [
+        param('table').isIn(['structures', 'special_structures', 'materials', 'labour']).withMessage('Invalid table name'),
+        param('id').notEmpty().withMessage('Item ID required'),
+        body('userId').notEmpty().withMessage('User ID required')
+    ],
+    handleValidationErrors,
+    async (req, res) => {
+        try {
+            const { table, id } = req.params;
+            const { userId } = req.body;
+
+            await resetToDefault(supabase, table, id, userId);
+
+            console.log(`🔄 Reset ${table}/${id} to default for user ${userId}`);
+            res.json({ success: true, message: 'Item reset to default' });
+        } catch (error) {
+            console.error('Error resetting item:', error);
+            res.status(400).json({ success: false, error: error.message });
+        }
+    }
+);
 
 // API endpoint to POST (update) the structure data to Supabase with validation
 app.post('/api/structures/update',

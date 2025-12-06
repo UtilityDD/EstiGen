@@ -9,7 +9,7 @@
 </head>
 
 <body>
-    <div class="admin-container">
+    <div class="admin-container" style="display: none;">
         <!-- Header -->
         <header class="admin-header">
             <div class="header-content">
@@ -25,6 +25,9 @@
         <nav class="tab-navigation">
             <button class="tab-btn active" data-table="structures">
                 📋 Structures
+            </button>
+            <button class="tab-btn" data-table="special_structures">
+                ✨ Special Structures
             </button>
             <button class="tab-btn" data-table="materials">
                 🔩 Materials
@@ -105,7 +108,12 @@
     <script src="auth.js"></script>
     <script>
         // Check auth immediately
-        checkAuth();
+        // Check auth immediately
+        checkAuth().then(user => {
+            if (user) {
+                document.querySelector('.admin-container').style.display = 'block';
+            }
+        });
     </script>
     <script src="admin-new.js"></script>
 </body>

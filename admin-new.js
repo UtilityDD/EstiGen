@@ -29,6 +29,24 @@ const tableConfigs = {
             { key: 'labour', label: 'Labour (JSON)', type: 'textarea', hint: 'Format: index:qty pairs separated by semicolons' }
         ]
     },
+    special_structures: {
+        title: 'Special Structures',
+        apiEndpoint: '/api/structures',
+        columns: [
+            { key: 'id', label: 'ID', width: '15%', sortable: true },
+            { key: 'name', label: 'Name', width: '30%', sortable: true },
+            { key: 'description', label: 'Description', width: '35%', truncate: true },
+            { key: 'voltage', label: 'Type', width: '20%', render: () => 'Special' }
+        ],
+        formFields: [
+            { key: 'id', label: 'ID', type: 'text', required: true, hint: 'Unique identifier (no spaces)' },
+            { key: 'name', label: 'Name', type: 'text', required: true },
+            { key: 'description', label: 'Description', type: 'text' },
+            { key: 'voltage', label: 'Type', type: 'text', value: 'Special Structure', readonly: true, hidden: true },
+            { key: 'materials', label: 'Materials (JSON)', type: 'textarea', hint: 'Format: index:qty pairs separated by semicolons' },
+            { key: 'labour', label: 'Labour (JSON)', type: 'textarea', hint: 'Format: index:qty pairs separated by semicolons' }
+        ]
+    },
     materials: {
         title: 'Materials',
         apiEndpoint: '/api/admin/materials',
@@ -135,6 +153,13 @@ async function loadTableData() {
         // Handle paginated response from estimates API
         if (allData.estimates) {
             allData = allData.estimates;
+        }
+
+        // Filter data for structures vs special structures
+        if (currentTable === 'structures') {
+            allData = allData.filter(item => item.voltage !== 'Special Structure');
+        } else if (currentTable === 'special_structures') {
+            allData = allData.filter(item => item.voltage === 'Special Structure');
         }
 
         filteredData = [...allData];

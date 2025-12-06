@@ -13,37 +13,108 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background: linear-gradient(135deg, var(--light-gray) 0%, #cfd8dc 100%);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
 
         .login-card {
             background: white;
-            padding: 2.5rem;
-            border-radius: 12px;
-            box-shadow: var(--shadow-lg);
+            padding: 3rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
             text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        /* Subtle hover effect for the card */
+        .login-card:hover {
+            transform: translateY(-5px);
         }
 
         .login-header {
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
         }
 
         .login-header h1 {
             color: var(--primary-color);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .login-header p {
+            color: #6c757d;
+            font-size: 1rem;
         }
 
         .form-group {
             text-align: left;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.75rem;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #344767;
+            font-size: 0.9rem;
+            letter-spacing: 0.3px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background-color: #f8fafc;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary-color);
+            background-color: #fff;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 121, 107, 0.15);
+            /* Using primary color with opacity */
+        }
+
+        .form-group input::placeholder {
+            color: #cbd5e1;
         }
 
         .btn-full {
             width: 100%;
-            padding: 0.8rem;
+            padding: 1rem;
             font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            border-radius: 8px;
+            margin-top: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 121, 107, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .btn-full:hover {
+            box-shadow: 0 6px 12px rgba(0, 121, 107, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-full:active {
+            transform: translateY(0);
+        }
+
+        .notification {
+            border-radius: 8px;
+            padding: 1rem;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
     </style>
 </head>
@@ -56,12 +127,13 @@
         </div>
         <form id="loginForm">
             <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" required placeholder="admin@example.com">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" required placeholder="name@company.com" autocomplete="email">
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" required placeholder="********">
+                <input type="password" id="password" required placeholder="Enter your password"
+                    autocomplete="current-password">
             </div>
             <button type="submit" class="btn btn-primary btn-full" id="loginBtn">
                 Sign In
