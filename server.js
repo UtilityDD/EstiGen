@@ -2,10 +2,32 @@ const express = require('express');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const { body, param, validationResult } = require('express-validator');
 const { supabase } = require('./supabase-config');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ============================================
+// VALIDATION ERROR HANDLER MIDDLEWARE
+// ============================================
+
+// Middleware to handle validation errors
+const handleValidationErrors = (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({
+            success: false,
+            message: 'Validation failed',
+            errors: errors.array().map(err => ({
+                field: err.path,
+                message: err.msg,
+                value: err.value
+            }))
+        });
+    }
+    next();
+};
 
 // ============================================
 // SECURITY HEADERS (Helmet.js)
@@ -152,43 +174,52 @@ app.get('/api/config', (req, res) => {
     });
 });
 
-// API endpoint to POST (update) the structure data to Supabase
-app.post('/api/structures/update', strictLimiter, async (req, res) => {
-    const updatedStructures = req.body;
+// API endpoint to POST (update) the structure data to Supabase with validation
+app.post('/api/structures/update',
+    strictLimiter,
+    [
+        body().isArray({ min: 1 }).withMessage('Must be a non-empty array'),
+        body('*.id').notEmpty().withMessage('Structure ID required'),
+        body('*.name').trim().notEmpty().isLength({ max: 200 }).withMessage('Name required (max 200 chars)'),
+        body('*.voltage').notEmpty().withMessage('Voltage required')
+    ],
+    handleValidationErrors,
+    async (req, res) => {
+        const updatedStructures = req.body;
 
-    if (!Array.isArray(updatedStructures)) {
-        return res.status(400).send('Invalid data format. Expected an array of structures.');
-    }
-
-    try {
-        // Separate structures into regular and special based on voltage field
-        const regularStructures = updatedStructures.filter(s => s.voltage !== 'Special Structure');
-        const specialStructures = updatedStructures.filter(s => s.voltage === 'Special Structure');
-
-        // Update regular structures
-        if (regularStructures.length > 0) {
-            const { error: structError } = await supabase
-                .from('structures')
-                .upsert(regularStructures, { onConflict: 'id' });
-
-            if (structError) throw structError;
+        if (!Array.isArray(updatedStructures)) {
+            return res.status(400).send('Invalid data format. Expected an array of structures.');
         }
 
-        // Update special structures
-        if (specialStructures.length > 0) {
-            const { error: specialError } = await supabase
-                .from('special_structures')
-                .upsert(specialStructures, { onConflict: 'id' });
+        try {
+            // Separate structures into regular and special based on voltage field
+            const regularStructures = updatedStructures.filter(s => s.voltage !== 'Special Structure');
+            const specialStructures = updatedStructures.filter(s => s.voltage === 'Special Structure');
 
-            if (specialError) throw specialError;
+            // Update regular structures
+            if (regularStructures.length > 0) {
+                const { error: structError } = await supabase
+                    .from('structures')
+                    .upsert(regularStructures, { onConflict: 'id' });
+
+                if (structError) throw structError;
+            }
+
+            // Update special structures
+            if (specialStructures.length > 0) {
+                const { error: specialError } = await supabase
+                    .from('special_structures')
+                    .upsert(specialStructures, { onConflict: 'id' });
+
+                if (specialError) throw specialError;
+            }
+
+            res.status(200).json({ message: 'Structures updated successfully!' });
+        } catch (error) {
+            console.error("Error writing structure data to Supabase:", error.message);
+            res.status(500).json({ message: 'An error occurred while saving data.', details: error.message });
         }
-
-        res.status(200).json({ message: 'Structures updated successfully!' });
-    } catch (error) {
-        console.error("Error writing structure data to Supabase:", error.message);
-        res.status(500).json({ message: 'An error occurred while saving data.', details: error.message });
-    }
-});
+    });
 
 // API endpoint to generate estimate from posted structures and library
 app.post('/api/generate-estimate', generateLimiter, async (req, res) => {
