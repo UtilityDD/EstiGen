@@ -9,15 +9,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Fetch estimates from API
 async function loadEstimates() {
-    showLoader(true);
+    // Don't show loader immediately - wait a bit to avoid flash on fast loads
+    const loaderTimeout = setTimeout(() => {
+        showLoader(true);
+    }, 200); // Only show loader if request takes > 200ms
+
     try {
         const response = await fetch('/api/estimates');
         if (!response.ok) throw new Error('Failed to fetch estimates');
 
         allEstimates = await response.json();
+        clearTimeout(loaderTimeout); // Cancel loader if we loaded fast
         renderEstimates(allEstimates);
         showLoader(false);
     } catch (error) {
+        clearTimeout(loaderTimeout);
         console.error('Error loading estimates:', error);
         alert('❌ Failed to load estimates: ' + error.message);
         showLoader(false);
@@ -117,9 +123,20 @@ function setupSearch() {
     });
 }
 
-// Show/hide loader
+// Show/hide loader with smooth transitions
 function showLoader(show) {
-    document.getElementById('loader').style.display = show ? 'flex' : 'none';
+    const loader = document.getElementById('loader');
+    if (show) {
+        loader.style.display = 'flex';
+        // Trigger reflow to enable transition
+        loader.offsetHeight;
+        loader.style.opacity = '1';
+    } else {
+        loader.style.opacity = '0';
+        setTimeout(() => {
+            loader.style.display = 'none';
+        }, 200); // Match CSS transition duration
+    }
 }
 
 // Format date
