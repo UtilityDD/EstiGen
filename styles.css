@@ -1,13 +1,21 @@
         :root {
-            --primary-color: #00796B; /* Teal */
-            --secondary-color: #004D40; /* Darker Teal */
-            --accent-color: #FFAB40; /* Amber */
-            --light-gray: #ECEFF1; /* Blue Grey 50 */
-            --medium-gray: #B0BEC5; /* Blue Grey 200 */
-            --dark-gray: #37474F; /* Blue Grey 800 */
+            --primary-color: #00796B;
+            /* Teal */
+            --secondary-color: #004D40;
+            /* Darker Teal */
+            --accent-color: #FFAB40;
+            /* Amber */
+            --light-gray: #ECEFF1;
+            /* Blue Grey 50 */
+            --medium-gray: #B0BEC5;
+            /* Blue Grey 200 */
+            --dark-gray: #37474F;
+            /* Blue Grey 800 */
             --white: #ffffff;
-            --success-color: #4CAF50; /* Green */
-            --error-color: #F44336; /* Red */
+            --success-color: #4CAF50;
+            /* Green */
+            --error-color: #F44336;
+            /* Red */
             --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
@@ -45,6 +53,7 @@
             margin: 0;
             font-size: 1.75rem;
         }
+
         .header a {
             color: var(--white);
             text-decoration: none;
@@ -52,6 +61,7 @@
             opacity: 0.8;
             transition: opacity 0.2s;
         }
+
         .header a:hover {
             opacity: 1;
         }
@@ -67,8 +77,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .step-title {
@@ -138,22 +155,24 @@
         }
 
         .structure-info p {
-            margin: 0; 
+            margin: 0;
             font-size: 0.9rem;
             color: #666;
         }
 
         .structure-description {
-            display: none; /* Hidden by default */
+            display: none;
+            /* Hidden by default */
             padding-top: 0.5rem;
-            font-size: 0.9rem; 
+            font-size: 0.9rem;
             color: #666;
         }
 
         .structure-item.expanded .structure-description {
-            display: block; /* Shown when parent is expanded */
+            display: block;
+            /* Shown when parent is expanded */
         }
- 
+
         .quantity-input {
             display: flex;
             align-items: center;
@@ -194,7 +213,8 @@
             color: var(--dark-gray);
             border-bottom: 3px solid transparent;
             transition: color 0.2s, border-color 0.2s;
-            margin-bottom: -2px; /* Align with the container's bottom border */
+            margin-bottom: -2px;
+            /* Align with the container's bottom border */
         }
 
         .tab-button.active {
@@ -248,23 +268,29 @@
             border-collapse: collapse;
             margin-top: 1rem;
         }
-        .additional-costs-table th, .additional-costs-table td {
+
+        .additional-costs-table th,
+        .additional-costs-table td {
             border: 1px solid var(--medium-gray);
             padding: 0.75rem 1rem;
             text-align: left;
             vertical-align: top;
         }
+
         .additional-costs-table th {
             background-color: #f8f9fa;
             font-weight: 600;
         }
+
         .additional-costs-table td:nth-child(1) {
             font-weight: 600;
             width: 25%;
         }
+
         .additional-costs-table td:nth-child(2) {
             width: 20%;
         }
+
         .additional-costs-table .radio-group label {
             display: inline;
             margin: 0;
@@ -275,17 +301,30 @@
             width: 100%;
             border-collapse: collapse;
         }
-        .rl-table th, .rl-table td {
+
+        .rl-table th,
+        .rl-table td {
             border: 1px solid var(--medium-gray);
             padding: 0.75rem;
             text-align: left;
         }
+
         .rl-table th {
             background-color: #f8f9fa;
             font-weight: 600;
         }
-        .rl-table input, .rl-table select { width: 100%; padding: 0.5rem; box-sizing: border-box; }
-        .rl-table td:first-child { font-weight: 600; width: 20%; }
+
+        .rl-table input,
+        .rl-table select {
+            width: 100%;
+            padding: 0.5rem;
+            box-sizing: border-box;
+        }
+
+        .rl-table td:first-child {
+            font-weight: 600;
+            width: 20%;
+        }
 
         .button-group {
             display: flex;
@@ -325,7 +364,9 @@
             padding: 1.5rem 2rem;
         }
 
-        .estimate-header, .estimate-summary, .estimate-totals {
+        .estimate-header,
+        .estimate-summary,
+        .estimate-totals {
             margin-bottom: 2rem;
         }
 
@@ -360,7 +401,8 @@
             display: none;
         }
 
-        .estimate-summary h3, .estimate-totals h3 {
+        .estimate-summary h3,
+        .estimate-totals h3 {
             color: var(--secondary-color);
             border-bottom: 2px solid var(--primary-color);
             padding-bottom: 0.5rem;
@@ -370,12 +412,14 @@
         .estimate-table {
             width: 100%;
             border-collapse: collapse;
-            font-family: var(--font-family); /* Apply consistent font */
+            font-family: var(--font-family);
+            /* Apply consistent font */
             margin-top: 0.5rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
-        .estimate-table th, .estimate-table td {
+        .estimate-table th,
+        .estimate-table td {
             border: 1px solid var(--medium-gray);
             padding: 0.6rem 0.75rem;
             text-align: left;
@@ -411,8 +455,9 @@
         .totals-table {
             width: 100%;
             border-collapse: collapse;
-            font-family: var(--font-family); /* Apply consistent font */
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-family: var(--font-family);
+            /* Apply consistent font */
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .totals-table td {
@@ -461,8 +506,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .error-message {
@@ -478,8 +528,10 @@
             background-color: var(--success-color);
             color: var(--white);
         }
+
         .btn-success:hover {
-            background-color: #45a049; /* A slightly darker green */
+            background-color: #45a049;
+            /* A slightly darker green */
         }
 
         .export-buttons {
@@ -498,31 +550,35 @@
                 size: A4;
                 margin: 15mm 10mm 20mm 10mm;
             }
-            
+
             body {
                 padding: 0;
                 background-color: var(--white);
                 font-size: 10pt;
             }
-            
+
             .container {
                 box-shadow: none;
                 border-radius: 0;
                 max-width: 100%;
             }
-            
-            .header, .export-buttons, .button-group, #loader, .error-message {
+
+            .header,
+            .export-buttons,
+            .button-group,
+            #loader,
+            .error-message {
                 display: none !important;
             }
-            
+
             .step {
                 display: none !important;
             }
-            
+
             #step-5 {
                 display: block !important;
             }
-            
+
             #estimate-output {
                 display: block !important;
                 padding: 0;
@@ -537,26 +593,26 @@
                 margin-bottom: 15px;
                 border: 1px solid #333;
             }
-            
+
             .print-header-content {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
                 flex-wrap: wrap;
             }
-            
+
             .print-header h3 {
                 margin: 0;
                 font-size: 14pt;
                 font-weight: 600;
             }
-            
+
             .print-header-info {
                 display: flex;
                 gap: 20px;
                 font-size: 9pt;
             }
-            
+
             .print-header-info span {
                 white-space: nowrap;
             }
@@ -565,7 +621,7 @@
             .estimate-header {
                 display: none !important;
             }
-            
+
             .header-details {
                 background: none !important;
                 border-left: 3px solid #333 !important;
@@ -573,11 +629,13 @@
             }
 
             /* Section styling */
-            .estimate-summary, .estimate-totals {
+            .estimate-summary,
+            .estimate-totals {
                 margin-bottom: 0;
             }
-            
-            .estimate-summary h3, .estimate-totals h3 {
+
+            .estimate-summary h3,
+            .estimate-totals h3 {
                 color: #000 !important;
                 font-size: 12pt;
                 border-bottom: 2px solid #333;
@@ -592,19 +650,20 @@
                 box-shadow: none;
                 border: 1px solid #ccc;
             }
-            
+
             .estimate-table th {
-                background: #e0e0e0 !important; /* Light gray for header */
+                background: #e0e0e0 !important;
+                /* Light gray for header */
                 color: black !important;
                 padding: 8px 6px;
                 font-size: 8pt;
             }
-            
+
             .estimate-table td {
                 padding: 6px;
                 border-color: #ddd;
             }
-            
+
             .estimate-table tbody tr:nth-child(even) {
                 background-color: transparent !important;
             }
@@ -620,24 +679,25 @@
                 font-size: 9pt;
                 box-shadow: none;
             }
-            
+
             .totals-table td {
                 padding: 6px 10px;
             }
-            
+
             .totals-table tr:nth-child(odd) {
-                background-color: #f5f5f5 !important; /* Keep light striping for readability */
+                background-color: #f5f5f5 !important;
+                /* Keep light striping for readability */
             }
-            
+
             .totals-table tr:last-child {
                 background: none !important;
                 color: black !important;
             }
-            
+
             .estimate-summary:first-of-type {
                 page-break-before: avoid;
             }
-            
+
             .estimate-totals {
                 page-break-before: always;
                 padding-top: 10px;
@@ -651,25 +711,25 @@
                 background: none !important;
                 border: 1px solid #ccc;
             }
-            
+
             /* Prevent breaking inside tables */
             .estimate-table {
                 page-break-inside: auto;
             }
-            
+
             .estimate-table thead {
                 display: table-header-group;
             }
-            
+
             .estimate-table tr {
                 page-break-inside: avoid;
             }
-            
+
             .totals-table {
                 page-break-inside: avoid;
             }
         }
-        
+
         .signatures {
             margin-top: 3rem;
             display: flex;
@@ -677,203 +737,355 @@
             padding: 1.5rem 1rem 0;
             border-top: 1px solid var(--medium-gray);
         }
+
         .signatures div {
             text-align: center;
             width: 45%;
             font-size: 0.9rem;
         }
- 
- /* ============================================
+
+           
+        /* ============================================
    PRINT-FRIENDLY & COMPACT PDF STYLES
    ============================================ */
-@media print {
+        @media print {
 
-    /* Hide unnecessary elements */
-    .header,
-    .export-buttons,
-    button,
-    .no-print {
-        display: none !important;
-    }
+            /* Hide unnecessary elements */
+            .header,
+            .export-buttons,
+            button,
+            .no-print {
+                display: none !important;
+            }
 
-    /* Compact spacing */
-    body {
-        margin: 0;
-        padding: 0;
-        font-size: 9pt;
-        line-height: 1.3;
-    }
+            /* Compact spacing */
+            body {
+                margin: 0;
+                padding: 0;
+                font-size: 9pt;
+                line-height: 1.3;
+            }
 
-    .container {
-        width: 100%;
-        max-width: none;
-        padding: 0;
-        margin: 0;
-    }
+            .container {
+                width: 100%;
+                max-width: none;
+                padding: 0;
+                margin: 0;
+            }
 
-    /* Compact headings */
-    h1 {
-        font-size: 16pt;
-        margin: 8pt 0 6pt 0;
-    }
+            /* Compact headings */
+            h1 {
+                font-size: 16pt;
+                margin: 8pt 0 6pt 0;
+            }
 
-    h2 {
-        font-size: 13pt;
-        margin: 6pt 0 4pt 0;
-    }
+            h2 {
+                font-size: 13pt;
+                margin: 6pt 0 4pt 0;
+            }
 
-    h3 {
-        font-size: 11pt;
-        margin: 5pt 0 3pt 0;
-    }
+            h3 {
+                font-size: 11pt;
+                margin: 5pt 0 3pt 0;
+            }
 
-    /* Compact estimate output */
-    #estimate-output {
-        padding: 5pt;
-    }
+            /* Compact estimate output */
+            #estimate-output {
+                padding: 5pt;
+            }
 
-    /* Compact tables */
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 8pt;
-        margin: 5pt 0;
-        page-break-inside: auto;
-    }
+            /* Compact tables */
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 8pt;
+                margin: 5pt 0;
+                page-break-inside: auto;
+            }
 
-    thead {
-        display: table-header-group;
-    }
+            thead {
+                display: table-header-group;
+            }
 
-    tr {
-        page-break-inside: avoid;
-        page-break-after: auto;
-    }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
 
-    th {
-        padding: 3pt 4pt;
-        font-size: 8.5pt;
-        background-color: #f5f5f5 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
+            th {
+                padding: 3pt 4pt;
+                font-size: 8.5pt;
+                background-color: #f5f5f5 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
 
-    td {
-        padding: 2pt 4pt;
-        font-size: 8pt;
-    }
+            td {
+                padding: 2pt 4pt;
+                font-size: 8pt;
+            }
 
-    /* Compact estimate info section */
-    .estimate-info {
-        margin: 5pt 0;
-        padding: 4pt;
-        font-size: 8.5pt;
-    }
+            /* Compact estimate info section */
+            .estimate-info {
+                margin: 5pt 0;
+                padding: 4pt;
+                font-size: 8.5pt;
+            }
 
-    .estimate-info p {
-        margin: 2pt 0;
-        line-height: 1.3;
-    }
+            .estimate-info p {
+                margin: 2pt 0;
+                line-height: 1.3;
+            }
 
-    /* Compact summary sections */
-    .summary-section,
-    .cost-summary {
-        margin: 6pt 0;
-        padding: 4pt;
-    }
+            /* Compact summary sections */
+            .summary-section,
+            .cost-summary {
+                margin: 6pt 0;
+                padding: 4pt;
+            }
 
-    .summary-row {
-        padding: 2pt 0;
-        font-size: 9pt;
-    }
+            .summary-row {
+                padding: 2pt 0;
+                font-size: 9pt;
+            }
 
-    /* Total rows - slightly larger but still compact */
-    .total-row,
-    .grand-total-row {
-        font-size: 9.5pt;
-        padding: 3pt 4pt;
-        font-weight: bold;
-    }
+            /* Total rows - slightly larger but still compact */
+            .total-row,
+            .grand-total-row {
+                font-size: 9.5pt;
+                padding: 3pt 4pt;
+                font-weight: bold;
+            }
 
-    /* Ensure colors print */
-    * {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
+            /* Ensure colors print */
+            * {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
 
-    /* Page breaks */
-    .page-break {
-        page-break-before: always;
-    }
+            /* Page breaks */
+            .page-break {
+                page-break-before: always;
+            }
 
-    .no-break {
-        page-break-inside: avoid;
-    }
+            .no-break {
+                page-break-inside: avoid;
+            }
 
-    /* Reduce spacing between sections */
-    .estimate-section {
-        margin: 6pt 0;
-    }
+            /* Reduce spacing between sections */
+            .estimate-section {
+                margin: 6pt 0;
+            }
 
-    /* Compact structure details if present */
-    .structure-item {
-        margin: 2pt 0;
-        padding: 2pt;
-        font-size: 8pt;
-    }
+            /* Compact structure details if present */
+            .structure-item {
+                margin: 2pt 0;
+                padding: 2pt;
+                font-size: 8pt;
+            }
 
-    /* Make estimate header more compact */
-    .estimate-header {
-        margin-bottom: 6pt;
-        padding: 4pt;
-    }
+            /* Make estimate header more compact */
+            .estimate-header {
+                margin-bottom: 6pt;
+                padding: 4pt;
+            }
 
-    /* Compact footer/notes */
-    .estimate-footer,
-    .estimate-notes {
-        margin-top: 8pt;
-        padding: 4pt;
-        font-size: 7.5pt;
-    }
-}
+            /* Compact footer/notes */
+            .estimate-footer,
+            .estimate-notes {
+                margin-top: 8pt;
+                padding: 4pt;
+                font-size: 7.5pt;
+            }
+        }
 
-/* Force compact styles for PDF generation (html2pdf captures current view) */
-.pdf-mode {
-    font-size: 9pt !important;
-    line-height: 1.3 !important;
-}
+        /* Force compact styles for PDF generation (html2pdf captures current view) */
+        .pdf-mode {
+            font-size: 9pt !important;
+            line-height: 1.3 !important;
+        }
 
-.pdf-mode h1 {
-    font-size: 16pt !important;
-    margin: 8pt 0 6pt 0 !important;
-}
+        .pdf-mode h1 {
+            font-size: 16pt !important;
+            margin: 8pt 0 6pt 0 !important;
+        }
 
-.pdf-mode h2 {
-    font-size: 13pt !important;
-    margin: 6pt 0 4pt 0 !important;
-}
+        .pdf-mode h2 {
+            font-size: 13pt !important;
+            margin: 6pt 0 4pt 0 !important;
+        }
 
-.pdf-mode h3 {
-    font-size: 11pt !important;
-    margin: 5pt 0 3pt 0 !important;
-}
+        .pdf-mode h3 {
+            font-size: 11pt !important;
+            margin: 5pt 0 3pt 0 !important;
+        }
 
-.pdf-mode table {
-    font-size: 8pt !important;
-    margin: 5pt 0 !important;
-}
+        .pdf-mode table {
+            font-size: 8pt !important;
+            margin: 5pt 0 !important;
+        }
 
-.pdf-mode th {
-    padding: 3pt 4pt !important;
-    font-size: 8.5pt !important;
-}
+        .pdf-mode th {
+            padding: 3pt 4pt !important;
+            font-size: 8.5pt !important;
+        }
 
-.pdf-mode td {
-    padding: 2pt 4pt !important;
-    font-size: 8pt !important;
-}
+        .pdf-mode td {
+            padding: 2pt 4pt !important;
+            font-size: 8pt !important;
+        }
 
-.pdf-mode .estimate-info p {
-    margin: 2pt 0 !important;
-    font-size: 8.5pt !important;
-}
+        .card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--light-gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .search-wrapper input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        .search-wrapper input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 121, 107, 0.1);
+            outline: none;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+
+        .data-table thead th {
+            background-color: #f8f9fa;
+            color: var(--secondary-color);
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+            border-bottom: 2px solid var(--light-gray);
+            white-space: nowrap;
+            text-align: left;
+        }
+
+        .data-table tbody td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--light-gray);
+            color: var(--dark-gray);
+            vertical-align: middle;
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .data-table tbody tr:hover {
+            background-color: #fcfcfc;
+        }
+
+        .text-right {
+            text-align: right !important;
+        }
+
+        .text-center {
+            text-align: center !important;
+        }
+
+        /* Empty State */
+        .empty-state {
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            margin: 0 0 0.5rem;
+            color: var(--dark-gray);
+            font-size: 1.25rem;
+        }
+
+        .empty-state p {
+            color: #888;
+            margin-bottom: 2rem;
+        }
+
+        /* Loader Overlay */
+        .loader-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        /* Action Buttons in Table */
+        .action-btn-group {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: transform 0.2s;
+            font-size: 1.1rem;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-icon:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-refresh {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+        }

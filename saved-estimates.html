@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Saved Estimates - EstiGen</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="admin-styles.css">
+
 </head>
 
 <body>
@@ -15,47 +15,53 @@
             <h1>Saved Estimates</h1>
             <div>
                 <a href="index.html">← Back to Generator</a>
-                <a href="admin.html" target="_blank">Admin Panel</a>
+
             </div>
         </div>
 
-        <div class="admin-container">
-            <div class="admin-header">
-                <div class="search-bar">
-                    <input type="text" id="searchInput" placeholder="Search by estimate ID or work name...">
+        <div class="content-container">
+            <!-- Stats/Summary cards could go here in future -->
+
+            <div class="card table-card">
+                <div class="card-header">
+                    <div class="search-wrapper">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchInput" placeholder="Search estimates...">
+                    </div>
+                    <button class="btn btn-secondary btn-refresh" onclick="refreshEstimates()">
+                        <span>🔄</span> Refresh
+                    </button>
                 </div>
-                <div class="admin-actions">
-                    <button class="btn btn-secondary" onclick="refreshEstimates()">🔄 Refresh</button>
+
+                <div class="table-responsive">
+                    <table class="data-table" id="estimatesTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Work Name</th>
+                                <th>Category</th>
+                                <th>Date Created</th>
+                                <th class="text-right">Total (₹)</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="estimatesBody">
+                            <!-- Estimates will be loaded here -->
+                        </tbody>
+                    </table>
                 </div>
-            </div>
 
-            <div class="table-container">
-                <table class="data-table" id="estimatesTable">
-                    <thead>
-                        <tr>
-                            <th>Estimate ID</th>
-                            <th>Work Name</th>
-                            <th>Category</th>
-                            <th>Date Created</th>
-                            <th>Grand Total (₹)</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="estimatesBody">
-                        <!-- Estimates will be loaded here -->
-                    </tbody>
-                </table>
-            </div>
+                <div id="emptyState" class="empty-state" style="display: none;">
+                    <div class="empty-icon">📁</div>
+                    <h3>No Saved Estimates</h3>
+                    <p>Estimates you save will appear here.</p>
+                    <a href="index.html" class="btn btn-primary">Create New Estimate</a>
+                </div>
 
-            <div id="emptyState" style="display: none; text-align: center; padding: 40px;">
-                <h3>No Saved Estimates</h3>
-                <p>You haven't saved any estimates yet.</p>
-                <a href="index.html" class="btn btn-primary">Create New Estimate</a>
-            </div>
-
-            <div id="loader" class="loader" style="display: none;">
-                <div class="spinner"></div>
-                <p>Loading estimates...</p>
+                <div id="loader" class="loader-overlay" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Loading...</p>
+                </div>
             </div>
         </div>
     </div>

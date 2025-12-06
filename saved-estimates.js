@@ -28,16 +28,17 @@ async function loadEstimates() {
 function renderEstimates(estimates) {
     const tbody = document.getElementById('estimatesBody');
     const emptyState = document.getElementById('emptyState');
+    const tableContainer = document.querySelector('.table-responsive');
 
     if (!estimates || estimates.length === 0) {
         tbody.innerHTML = '';
         emptyState.style.display = 'block';
-        document.querySelector('.table-container').style.display = 'none';
+        if (tableContainer) tableContainer.style.display = 'none';
         return;
     }
 
     emptyState.style.display = 'none';
-    document.querySelector('.table-container').style.display = 'block';
+    if (tableContainer) tableContainer.style.display = 'block';
 
     // Sort by created date (newest first)
     estimates.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -48,8 +49,8 @@ function renderEstimates(estimates) {
             <td>${est.work_name}</td>
             <td>${est.work_category}</td>
             <td>${formatDate(est.created_at)}</td>
-            <td style="text-align: right;">₹${formatNumber(est.grand_total)}</td>
-            <td class="table-actions">
+            <td class="text-right">₹${formatNumber(est.grand_total)}</td>
+            <td class="action-btn-group">
                 <button class="btn btn-primary btn-icon" onclick="viewEstimate('${est.id}')" title="View">👁️</button>
                 <button class="btn btn-danger btn-icon" onclick="deleteEstimate('${est.id}', '${est.estimate_id}')" title="Delete">🗑️</button>
             </td>
