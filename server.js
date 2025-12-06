@@ -1,10 +1,49 @@
 const express = require('express');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 const { supabase } = require('./supabase-config');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ============================================
+// SECURITY HEADERS (Helmet.js)
+// ============================================
+
+// Apply Helmet security headers
+app.use(helmet({
+    // Content Security Policy - controls what resources can be loaded
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: [
+                "'self'",
+                "'unsafe-inline'", // Needed for inline scripts in HTML
+                "https://cdnjs.cloudflare.com" // For html2pdf.js
+            ],
+            styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: [
+                "'self'",
+                process.env.SUPABASE_URL || "https://*.supabase.co" // Allow Supabase API calls
+            ],
+            fontSrc: ["'self'", "data:"],
+            objectSrc: ["'none'"],
+            upgradeInsecureRequests: [] // Force HTTPS in production
+        }
+    },
+    // Prevent clickjacking by disallowing the site to be embedded in frames
+    frameguard: { action: 'deny' },
+    // Hide X-Powered-By header (don't reveal we use Express)
+    hidePoweredBy: true,
+    // Prevent MIME type sniffing
+    noSniff: true,
+    // Enable XSS filter in older browsers
+    xssFilter: true
+}));
+
+console.log('🛡️  Helmet security headers enabled');
 
 // ============================================
 // RATE LIMITING CONFIGURATION
