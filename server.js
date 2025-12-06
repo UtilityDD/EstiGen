@@ -3,7 +3,7 @@ const path = require('path');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const { body, param, validationResult } = require('express-validator');
-const { mergeUserData, cloneForUser, resetToDefault } = require('./multi-user-helpers');
+const { mergeUserData, cloneForUser, resetToDefault, forkStructure } = require('./multi-user-helpers');
 const { supabase } = require('./supabase-config');
 
 const app = express();
@@ -224,6 +224,29 @@ app.delete('/api/:table/:id/reset',
             res.json({ success: true, message: 'Item reset to default' });
         } catch (error) {
             console.error('Error resetting item:', error);
+            res.status(400).json({ success: false, error: error.message });
+        }
+    }
+);
+
+// Fork and update a structure (In-App Edit)
+app.post('/api/structures/fork-and-update',
+    [
+        body('structureId').notEmpty().withMessage('Structure ID required'),
+        body('userId').notEmpty().withMessage('User ID required'),
+        body('changes').isObject().withMessage('Changes object required')
+    ],
+    handleValidationErrors,
+    async (req, res) => {
+        try {
+            const { structureId, userId, changes } = req.body;
+
+            const updatedStructure = await forkStructure(supabase, structureId, userId, changes);
+
+            console.log(`✅ User ${userId} forked/updated structure ${structureId}`);
+            res.json({ success: true, data: updatedStructure });
+        } catch (error) {
+            console.error('Error in fork-and-update:', error);
             res.status(400).json({ success: false, error: error.message });
         }
     }

@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EstiGen: Estimate Made Easy</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="edit-modal.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 
@@ -169,11 +171,33 @@
         </div>
     </div>
 
+    <!-- Edit Modal -->
+    <div id="edit-structure-modal" class="edit-modal" style="display: none;">
+        <div class="edit-modal-content">
+            <span class="close-modal" onclick="closeEditModal()">&times;</span>
+            <h2 id="edit-modal-title">Edit Structure</h2>
+            <p id="edit-modal-desc" style="color: #666; margin-bottom: 15px;"></p>
+
+            <div class="edit-section">
+                <h3>Materials</h3>
+                <div id="edit-materials-container"></div>
+            </div>
+
+            <div class="edit-section">
+                <h3>Labour</h3>
+                <div id="edit-labour-container"></div>
+            </div>
+
+            <div class="button-group" style="justify-content: flex-end; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveStructureEdits()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
     <script src="user-session.js"></script>
     <script src="script.js"></script>
     <script src="save-estimate.js"></script>
-
-
 
 </body>
 

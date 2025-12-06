@@ -116,5 +116,71 @@ async function resetToDefault(supabase, tableName, itemId, userId) {
 module.exports = {
     mergeUserData,
     cloneForUser,
-    resetToDefault
+    resetToDefault,
+    forkStructure
 };
+
+/**
+ * Fork a structure for a user and apply updates immediately.
+ * Handles both "First Fork" and "Update Existing Fork".
+ * @param {Object} supabase - Supabase client instance
+ * @param {string} structureId - Logical ID of the structure (e.g. 'pole-1')
+ * @param {string} userId - User ID
+ * @param {Object} changes - Object containing changes (materials, labour)
+ * @returns {Promise<Object>} The updated structure
+ */
+async function forkStructure(supabase, structureId, userId, changes) {
+    // 1. Get the existing definition (either Custom or Default)
+    // We prioritize Custom if it exists, to merge changes incrementally if needed.
+    // For now, we assume 'changes' contains the FULL new lists for materials/labour, 
+    // but fetching helps preserve other fields like Name/Description.
+
+    // Try to get user's existing custom row
+    let { data: existingCustom } = await supabase
+        .from('structures')
+        .select('*')
+        .eq('id', structureId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    let baseItem = existingCustom;
+
+    // If no custom row, get the default row
+    if (!baseItem) {
+        const { data: defaultItem, error: defError } = await supabase
+            .from('structures')
+            .select('*')
+            .eq('id', structureId)
+            .is('user_id', null)
+            .maybeSingle();
+
+        if (defError || !defaultItem) throw new Error(`Structure '${structureId}' not found.`);
+        baseItem = defaultItem;
+    }
+
+    // 2. Prepare the new/updated record
+    // We start with the base item, override with changes, and force user_id
+    const newRecord = {
+        ...baseItem,
+        user_id: userId,
+        materials: changes.materials || baseItem.materials,
+        labour: changes.labour || baseItem.labour,
+        updated_at: new Date().toISOString()
+    };
+
+    // Remove system fields we don't want to copy/write manually
+    delete newRecord.record_id;
+    delete newRecord.created_at;
+
+    // 3. Upsert based on (id, user_id) constraint
+    // The UNIQUE INDEX we added allows us to UPSERT by matching (id, user_id)
+    const { data: upserted, error: upsertError } = await supabase
+        .from('structures')
+        .upsert(newRecord, { onConflict: 'id, user_id' })
+        .select()
+        .single();
+
+    if (upsertError) throw upsertError;
+
+    return upserted;
+}

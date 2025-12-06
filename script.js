@@ -369,8 +369,14 @@ function renderStructureList() {
                 structureTableRows += `
                     <tr>
                         <td>${structure.id}</td>
-                        <td>${structure.name}</td>
+                        <td>
+                            ${structure.user_id ? '<span class="badge badge-custom" title="Customized by you">Custom</span> ' : ''}
+                            ${structure.name}
+                        </td>
                         <td><input type="number" id="qty-${structure.id}" min="0" value="${quantity}" onchange="updateStructureQuantity('${structure.id}', this.value)" style="text-align: center;"></td>
+                        <td style="text-align: center;">
+                            <button class="btn btn-secondary btn-sm" onclick="openEditModal('${structure.id}')" title="Edit Structure Details">✏️ Edit</button>
+                        </td>
                     </tr>
                 `;
             });
@@ -379,9 +385,10 @@ function renderStructureList() {
                 <table class="rl-table">
                     <thead>
                         <tr>
-                            <th style="width: 25%;">Structure Code</th>
-                            <th style="width: 55%;">Structure Name</th>
-                            <th style="width: 20%; text-align: center;">Quantity</th>
+                            <th style="width: 20%;">Structure Code</th>
+                            <th style="width: 45%;">Structure Name</th>
+                            <th style="width: 15%; text-align: center;">Quantity</th>
+                            <th style="width: 20%; text-align: center;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -445,6 +452,117 @@ function updateStructureQuantity(structureId, quantity) {
     if (numQuantity > 0) {
         estimate.structures[structureId] = numQuantity;
     } else { delete estimate.structures[structureId]; }
+}
+
+// --- EDIT MODAL FUNCTIONS ---
+
+let currentEditingStructureId = null;
+
+function openEditModal(structureId) {
+    const structure = structureLibrary.find(s => s.id === structureId);
+    if (!structure) {
+        alert("Structure data not found.");
+        return;
+    }
+
+    currentEditingStructureId = structureId;
+    document.getElementById('edit-modal-title').textContent = `Edit: ${structure.name}`;
+    document.getElementById('edit-modal-desc').textContent = structure.description || 'No description available.';
+    document.getElementById('edit-structure-modal').style.display = 'block';
+
+    // Render Materials Inputs
+    const matContainer = document.getElementById('edit-materials-container');
+    if (structure.materials && structure.materials.length > 0) {
+        let html = '<table class="edit-table"><thead><tr><th>Material</th><th>Quantity</th></tr></thead><tbody>';
+        structure.materials.forEach((m, idx) => {
+            // Find material name from global list if available (simplified here to just ID/Index)
+            html += `<tr>
+                <td>Material Index ${m.index} (ID: ${m.index})</td>
+                <td><input type="number" step="0.01" class="edit-mat-qty" data-index="${m.index}" value="${m.qty}"></td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        matContainer.innerHTML = html;
+    } else {
+        matContainer.innerHTML = '<p>No materials defined.</p>';
+    }
+
+    // Render Labour Inputs
+    const labContainer = document.getElementById('edit-labour-container');
+    if (structure.labour && structure.labour.length > 0) {
+        let html = '<table class="edit-table"><thead><tr><th>Labour Code</th><th>Quantity</th></tr></thead><tbody>';
+        structure.labour.forEach((l, idx) => {
+            html += `<tr>
+                <td>Labour Index ${l.index}</td>
+                <td><input type="number" step="0.01" class="edit-lab-qty" data-index="${l.index}" value="${l.qty}"></td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        labContainer.innerHTML = html;
+    } else {
+        labContainer.innerHTML = '<p>No labour defined.</p>';
+    }
+}
+
+function closeEditModal() {
+    document.getElementById('edit-structure-modal').style.display = 'none';
+    currentEditingStructureId = null;
+}
+
+async function saveStructureEdits() {
+    if (!currentEditingStructureId) return;
+
+    const userId = userSession.getUserId();
+    if (!userId) {
+        alert("User session error. Please reload.");
+        return;
+    }
+
+    // Gather Data
+    const materials = [];
+    document.querySelectorAll('.edit-mat-qty').forEach(input => {
+        materials.push({
+            index: parseInt(input.dataset.index),
+            qty: parseFloat(input.value) || 0
+        });
+    });
+
+    const labour = [];
+    document.querySelectorAll('.edit-lab-qty').forEach(input => {
+        labour.push({
+            index: parseInt(input.dataset.index),
+            qty: parseFloat(input.value) || 0
+        });
+    });
+
+    try {
+        const response = await fetch('/api/structures/fork-and-update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                structureId: currentEditingStructureId,
+                userId: userId,
+                changes: { materials, labour }
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert("Changes saved! This customized structure is now yours.");
+            closeEditModal();
+            // Reload structures to show the new custom version
+            // For simplicity, we trigger a full reload of the structure list logic
+            // Ideally we'd just update the local library, but a refresh ensures consistency
+            window.location.reload();
+        } else {
+            alert("Failed to save changes: " + result.error);
+        }
+
+    } catch (error) {
+        console.error("Save error:", error);
+        alert("An error occurred while saving.");
+    }
 }
 
 function toggleDescription(element) {
