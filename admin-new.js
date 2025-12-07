@@ -603,8 +603,9 @@ async function saveRecord() {
             if (id && qty > 0) labour.push({ index: id, qty });
         });
 
-        data.materials = materials;
-        data.labour = labour;
+        // Convert back to Semicolon String if that is the DB format
+        data.materials = materials.map(m => `${m.index}:${m.qty}`).join(';');
+        data.labour = labour.map(l => `${l.index}:${l.qty}`).join(';');
     }
 
     // API Expects array of updates for /api/structures/update

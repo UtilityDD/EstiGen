@@ -285,9 +285,15 @@ app.post('/api/structures/update',
 
             // Update special structures
             if (specialStructures.length > 0) {
+                // Remove 'voltage' field as it is likely not a column in special_structures table
+                const sanitizedSpecial = specialStructures.map(s => {
+                    const { voltage, ...rest } = s;
+                    return rest;
+                });
+
                 const { error: specialError } = await supabase
                     .from('special_structures')
-                    .upsert(specialStructures, { onConflict: 'id' });
+                    .upsert(sanitizedSpecial, { onConflict: 'id' });
 
                 if (specialError) throw specialError;
             }
