@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surveyor Login - EstiGen</title>
+    <link rel="stylesheet" href="admin-styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Reuse Admin Login Styles for consistency -->
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #e0eaec 0%, #4b6cb7 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        .login-card {
+            background: white;
+            padding: 3rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .login-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .login-header {
+            margin-bottom: 2.5rem;
+        }
+
+        .login-header h1 {
+            color: #1e3c72;
+            margin-bottom: 0.75rem;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .login-header p {
+            color: #6c757d;
+            font-size: 1rem;
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 1.75rem;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #344767;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background-color: #f8fafc;
+            box-sizing: border-box;
+            /* Fix padding issue */
+        }
+
+        .form-group input:focus {
+            border-color: #1e3c72;
+            background-color: #fff;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.15);
+        }
+
+        .btn-full {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            border-radius: 8px;
+            margin-top: 1rem;
+            box-shadow: 0 4px 6px rgba(30, 60, 114, 0.2);
+            transition: all 0.3s ease;
+            background-color: #1e3c72;
+            /* Darker blue for surveyors */
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-full:hover {
+            background-color: #2a5298;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(30, 60, 114, 0.3);
+        }
+
+        #error-message {
+            color: #dc3545;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            background-color: rgba(220, 53, 69, 0.1);
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-card">
+        <div class="login-header">
+            <h1>Surveyor Login</h1>
+            <p>Access the Estimate Generator</p>
+        </div>
+
+        <form id="login-form" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" required placeholder="name@example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" required placeholder="Enter your password">
+            </div>
+
+            <div id="error-message"></div>
+
+            <button type="submit" class="btn-full" id="login-btn">
+                Log In
+            </button>
+        </form>
+
+        <div style="margin-top: 20px; font-size: 0.9em; color: #888;">
+            <a href="login.html" style="text-decoration: none; color: #666;">Admin Login</a>
+        </div>
+    </div>
+
+    <!-- Correctly ordered script loading -->
+    <script src="auth.js"></script>
+    <script>
+        // Check if already logged in
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await auth.getCurrentUser();
+            if (user) {
+                if (user.role === 'admin') {
+                    // Start redirecting to admin, but maybe warn them? 
+                    // Actually, if they are admin, let them go to admin panel.
+                    window.location.href = 'admin.html';
+                } else {
+                    // Already logged in as user, go to app
+                    window.location.href = 'index.html';
+                }
+            }
+        });
+
+        async function handleLogin(e) {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('error-message');
+            const btn = document.getElementById('login-btn');
+
+            errorDiv.style.display = 'none';
+            btn.textContent = 'Verifying...';
+            btn.disabled = true;
+
+            try {
+                // loginUser is defined in auth.js
+                await auth.loginUser(email, password);
+                // Redirect after successful login
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error(error);
+                errorDiv.textContent = error.message || 'Login failed. Please check credentials.';
+                errorDiv.style.display = 'block';
+                btn.textContent = 'Log In';
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+
+</html>

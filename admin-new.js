@@ -86,8 +86,24 @@ const tableConfigs = {
 };
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
+let masterMaterials = [];
+let masterLabour = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
     initializeEventListeners();
+
+    // Fetch master data for editing
+    try {
+        const [matRes, labRes] = await Promise.all([
+            fetch('/api/admin/materials'),
+            fetch('/api/admin/labour')
+        ]);
+        if (matRes.ok) masterMaterials = await matRes.json();
+        if (labRes.ok) masterLabour = await labRes.json();
+    } catch (e) {
+        console.error("Failed to load master data:", e);
+    }
+
     loadTableData();
 });
 
@@ -319,6 +335,8 @@ window.viewRecord = viewRecord;
 window.editRecord = editRecord;
 window.deleteRecord = deleteRecord;
 window.closeModal = closeModal;
+window.addMaterialRow = addMaterialRow;
+window.addLabourRow = addLabourRow;
 
 // Search Handler
 function handleSearch() {
@@ -358,32 +376,191 @@ function openModal(data = null) {
 
     modalTitle.textContent = data ? `Edit ${config.title}` : `Add New ${config.title.slice(0, -1)}`;
 
-    // Build form
-    let formHtml = '<form id="record-form">';
-
-    config.formFields.forEach(field => {
-        const value = data ? (data[field.key] || '') : '';
-        formHtml += `
+    // Special rendering for Structures (Search & Select UI)
+    if (currentTable === 'structures' || currentTable === 'special_structures') {
+        const isSpecial = currentTable === 'special_structures';
+        renderStructureEditor(modalBody, data, isSpecial);
+    }
+    // Default rendering for other tables (Materials, Labour)
+    else {
+        let formHtml = '<form id="record-form">';
+        config.formFields.forEach(field => {
+            const value = data ? (data[field.key] || '') : '';
+            formHtml += `
             <div class="form-field">
                 <label for="field-${field.key}">
                     ${field.label} ${field.required ? '<span style="color: red;">*</span>' : ''}
                 </label>
                 ${field.type === 'textarea'
-                ? `<textarea id="field-${field.key}" name="${field.key}" ${field.required ? 'required' : ''}>${value}</textarea>`
-                : `<input type="${field.type}" id="field-${field.key}" name="${field.key}" value="${value}" ${field.required ? 'required' : ''} ${field.step ? `step="${field.step}"` : ''}>`
-            }
+                    ? `<textarea id="field-${field.key}" name="${field.key}" ${field.required ? 'required' : ''}>${value}</textarea>`
+                    : `<input type="${field.type}" id="field-${field.key}" name="${field.key}" value="${value}" ${field.required ? 'required' : ''} ${field.step ? `step="${field.step}"` : ''}>`
+                }
                 ${field.hint ? `<small style="color: #666;">${field.hint}</small>` : ''}
             </div>
         `;
-    });
-
-    formHtml += '</form>';
-    modalBody.innerHTML = formHtml;
+        });
+        formHtml += '</form>';
+        modalBody.innerHTML = formHtml;
+    }
 
     // Store current data for editing
     modal.dataset.editId = data ? getRowId(data) : '';
 
     modal.classList.remove('hidden');
+}
+
+// Custom Renderer for Structure Editor
+function renderStructureEditor(container, data, isSpecial) {
+    const id = data?.id || '';
+    const name = data?.name || '';
+    const description = data?.description || '';
+    const voltage = data?.voltage || (isSpecial ? 'Special Structure' : '');
+
+    // Parse materials/labour
+    // Format is either JSON Array (new) or Semicolon String "1:1;2:3" (legacy/db default)
+    let materials = [];
+    if (data?.materials) {
+        if (Array.isArray(data.materials)) {
+            materials = data.materials;
+        } else if (typeof data.materials === 'string') {
+            // Check if it's JSON
+            if (data.materials.trim().startsWith('[')) {
+                try { materials = JSON.parse(data.materials); } catch (e) { materials = []; }
+            } else {
+                // Assume semicolon format "index:qty;index:qty"
+                materials = data.materials.split(';').map(pair => {
+                    const parts = pair.split(':');
+                    if (parts.length < 2) return null;
+                    return { index: parts[0].trim(), qty: parseFloat(parts[1].trim()) };
+                }).filter(i => i);
+            }
+        }
+    }
+
+    let labour = [];
+    if (data?.labour) {
+        if (Array.isArray(data.labour)) {
+            labour = data.labour;
+        } else if (typeof data.labour === 'string') {
+            if (data.labour.trim().startsWith('[')) {
+                try { labour = JSON.parse(data.labour); } catch (e) { labour = []; }
+            } else {
+                // Assume semicolon format
+                labour = data.labour.split(';').map(pair => {
+                    const parts = pair.split(':');
+                    if (parts.length < 2) return null;
+                    return { index: parts[0].trim(), qty: parseFloat(parts[1].trim()) };
+                }).filter(i => i);
+            }
+        }
+    }
+
+    let html = `
+    <form id="record-form" class="structure-form">
+        <div class="form-grid">
+            <div class="form-field">
+                <label>ID <span style="color:red">*</span></label>
+                <input type="text" name="id" value="${id}" required ${data ? 'readonly' : ''} placeholder="Unique ID">
+            </div>
+            <div class="form-field">
+                <label>Name <span style="color:red">*</span></label>
+                <input type="text" name="name" value="${name}" required>
+            </div>
+            <div class="form-field">
+                <label>Voltage</label>
+                <input type="text" name="voltage" value="${voltage}" ${isSpecial ? 'readonly' : ''}>
+            </div>
+            <div class="form-field full-width">
+                <label>Description</label>
+                <input type="text" name="description" value="${description}">
+            </div>
+        </div>
+
+        <div class="editor-section">
+            <h3>Materials</h3>
+            <div id="admin-materials-container">
+                <table class="edit-table" id="admin-mat-table">
+                    <thead><tr><th>Material</th><th>Qty</th><th></th></tr></thead>
+                    <tbody></tbody>
+                </table>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="addMaterialRow()">+ Add Material</button>
+            </div>
+            <datalist id="admin-material-list">
+                 ${masterMaterials.map(m => `<option value="${m.Description} [Currently: ${m.mat_sl}]" data-id="${m.mat_sl}">Code: ${m['Material Code']}</option>`).join('')}
+            </datalist>
+        </div>
+
+        <div class="editor-section">
+            <h3>Labour</h3>
+            <div id="admin-labour-container">
+                <table class="edit-table" id="admin-lab-table">
+                    <thead><tr><th>Labour Item</th><th>Qty</th><th></th></tr></thead>
+                    <tbody></tbody>
+                </table>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="addLabourRow()">+ Add Labour</button>
+            </div>
+            <datalist id="admin-labour-list">
+                ${masterLabour.map(l => `<option value="${l.Description} [Currently: ${l.lab_sl}]" data-id="${l.lab_sl}">Code: ${l['Labour Code']}</option>`).join('')}
+            </datalist>
+        </div>
+    </form>
+    `;
+
+    container.innerHTML = html;
+
+    // Populate rows
+    if (Array.isArray(materials)) materials.forEach(m => addMaterialRow(m));
+    if (Array.isArray(labour)) labour.forEach(l => addLabourRow(l));
+}
+
+function addMaterialRow(item = null) {
+    const tbody = document.querySelector('#admin-mat-table tbody');
+    const tr = document.createElement('tr');
+
+    let inputValue = '';
+    let qty = item ? (item.qty || 0) : 1;
+    let idx = item ? (item.index || item.id) : ''; // handle both index or id keys
+
+    if (idx) {
+        const found = masterMaterials.find(m => m.mat_sl == idx);
+        inputValue = found ? `${found.Description} [Currently: ${found.mat_sl}]` : `Item ${idx}`;
+    }
+
+    tr.innerHTML = `
+        <td><input type="text" class="mat-search-input" list="admin-material-list" value="${inputValue}" placeholder="Search..." style="width:100%"></td>
+        <td><input type="number" step="0.01" class="mat-qty-input" value="${qty}" style="width:70px"></td>
+        <td><button type="button" onclick="this.closest('tr').remove()" style="color:red">&times;</button></td>
+    `;
+    tbody.appendChild(tr);
+}
+
+function addLabourRow(item = null) {
+    const tbody = document.querySelector('#admin-lab-table tbody');
+    const tr = document.createElement('tr');
+
+    let inputValue = '';
+    let qty = item ? (item.qty || 0) : 1;
+    let idx = item ? (item.index || item.id) : '';
+
+    if (idx) {
+        const found = masterLabour.find(l => l.lab_sl == idx);
+        inputValue = found ? `${found.Description} [Currently: ${found.lab_sl}]` : `Item ${idx}`;
+    }
+
+    tr.innerHTML = `
+        <td><input type="text" class="lab-search-input" list="admin-labour-list" value="${inputValue}" placeholder="Search..." style="width:100%"></td>
+        <td><input type="number" step="0.01" class="lab-qty-input" value="${qty}" style="width:70px"></td>
+        <td><button type="button" onclick="this.closest('tr').remove()" style="color:red">&times;</button></td>
+    `;
+    tbody.appendChild(tr);
+}
+
+function extractIdFromInput(value, masterList, idField) {
+    const match = value.match(/\[Currently:\s*(\d+)\]$/);
+    if (match) return parseInt(match[1]);
+    const found = masterList.find(i => i.Description === value);
+    if (found) return found[idField];
+    return null;
 }
 
 // Close Modal
@@ -408,17 +585,66 @@ async function saveRecord() {
         data[key] = value;
     }
 
-    // For structures, handle special formatting
-    if (currentTable === 'structures') {
-        // Materials and labour should be formatted properly
-        // This is a placeholder - adjust based on your API requirements
+    // Handle Structure Editing (New UI)
+    if (currentTable === 'structures' || currentTable === 'special_structures') {
+        const materials = [];
+        document.querySelectorAll('#admin-mat-table tbody tr').forEach(tr => {
+            const val = tr.querySelector('.mat-search-input').value;
+            const qty = parseFloat(tr.querySelector('.mat-qty-input').value) || 0;
+            const id = extractIdFromInput(val, masterMaterials, 'mat_sl');
+            if (id && qty > 0) materials.push({ index: id, qty });
+        });
+
+        const labour = [];
+        document.querySelectorAll('#admin-lab-table tbody tr').forEach(tr => {
+            const val = tr.querySelector('.lab-search-input').value;
+            const qty = parseFloat(tr.querySelector('.lab-qty-input').value) || 0;
+            const id = extractIdFromInput(val, masterLabour, 'lab_sl');
+            if (id && qty > 0) labour.push({ index: id, qty });
+        });
+
+        data.materials = materials;
+        data.labour = labour;
     }
+
+    // API Expects array of updates for /api/structures/update
+    // But this generic save might be used for single item creation too?
+    // The previous implementation was a placeholder. 
+    // We'll wrap it in array for /api/structures/update or fallback.
 
     showNotification('Saving...', 'warning');
 
     try {
-        // This is a placeholder - implement actual save logic
-        console.log('Saving data:', data);
+        let endpoint = config.apiEndpoint;
+        let method = 'POST';
+        let body = null;
+
+        if (currentTable === 'structures' || currentTable === 'special_structures') {
+            endpoint = '/api/structures/update';
+            // server expects array
+            body = JSON.stringify([data]);
+        } else {
+            // Materials/Labour updates
+            if (form.closest('.modal').dataset.editId) {
+                // Edit existing
+                const id = form.closest('.modal').dataset.editId;
+                method = 'PUT';
+                endpoint = `${config.apiEndpoint}/${id}`;
+            }
+            body = JSON.stringify(data);
+        }
+
+        const response = await fetch(endpoint, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: body
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.message || 'Save failed');
+        }
+
         showNotification('Record saved successfully!', 'success');
         closeModal();
         loadTableData();

@@ -457,6 +457,25 @@ function updateStructureQuantity(structureId, quantity) {
 // --- EDIT MODAL FUNCTIONS ---
 
 let currentEditingStructureId = null;
+let masterMaterials = [];
+let masterLabour = [];
+
+// Fetch master data on load
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const [matRes, labRes] = await Promise.all([
+            fetch('/api/admin/materials'),
+            fetch('/api/admin/labour')
+        ]);
+
+        if (matRes.ok) masterMaterials = await matRes.json();
+        if (labRes.ok) masterLabour = await labRes.json();
+
+        console.log(`Loaded ${masterMaterials.length} materials and ${masterLabour.length} labour items for editing.`);
+    } catch (e) {
+        console.error("Failed to load master data for editing:", e);
+    }
+});
 
 function openEditModal(structureId) {
     const structure = structureLibrary.find(s => s.id === structureId);
@@ -470,38 +489,110 @@ function openEditModal(structureId) {
     document.getElementById('edit-modal-desc').textContent = structure.description || 'No description available.';
     document.getElementById('edit-structure-modal').style.display = 'block';
 
-    // Render Materials Inputs
-    const matContainer = document.getElementById('edit-materials-container');
-    if (structure.materials && structure.materials.length > 0) {
-        let html = '<table class="edit-table"><thead><tr><th>Material</th><th>Quantity</th></tr></thead><tbody>';
-        structure.materials.forEach((m, idx) => {
-            // Find material name from global list if available (simplified here to just ID/Index)
-            html += `<tr>
-                <td>Material Index ${m.index} (ID: ${m.index})</td>
-                <td><input type="number" step="0.01" class="edit-mat-qty" data-index="${m.index}" value="${m.qty}"></td>
-            </tr>`;
-        });
-        html += '</tbody></table>';
-        matContainer.innerHTML = html;
-    } else {
-        matContainer.innerHTML = '<p>No materials defined.</p>';
+    renderMaterialEditor(structure.materials || []);
+    renderLabourEditor(structure.labour || []);
+}
+
+function renderMaterialEditor(materials) {
+    const container = document.getElementById('edit-materials-container');
+    container.innerHTML = `
+        <table class="edit-table" id="material-edit-table">
+            <thead>
+                <tr>
+                    <th style="width: 70%">Material (Search by Name/Code)</th>
+                    <th style="width: 20%">Quantity</th>
+                    <th style="width: 10%">Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <button class="btn btn-sm btn-secondary" onclick="addMaterialRow()" style="margin-top: 10px;">+ Add Material</button>
+        <datalist id="material-list">
+            ${masterMaterials.map(m => `<option value="${m.Description} [Currently: ${m.mat_sl}]" data-id="${m.mat_sl}">Code: ${m['Material Code']}</option>`).join('')}
+        </datalist>
+    `;
+
+    const tbody = container.querySelector('tbody');
+    materials.forEach(m => addMaterialRow(m));
+}
+
+function addMaterialRow(item = null) {
+    const tbody = document.querySelector('#material-edit-table tbody');
+    const tr = document.createElement('tr');
+
+    let inputValue = '';
+    let qtyValue = item ? item.qty : 1;
+
+    if (item) {
+        // Try to find the name from the master list using the index/ID
+        const found = masterMaterials.find(m => m.mat_sl == item.index);
+        inputValue = found ? `${found.Description} [Currently: ${found.mat_sl}]` : `Unknown Item (Index: ${item.index})`;
     }
 
-    // Render Labour Inputs
-    const labContainer = document.getElementById('edit-labour-container');
-    if (structure.labour && structure.labour.length > 0) {
-        let html = '<table class="edit-table"><thead><tr><th>Labour Code</th><th>Quantity</th></tr></thead><tbody>';
-        structure.labour.forEach((l, idx) => {
-            html += `<tr>
-                <td>Labour Index ${l.index}</td>
-                <td><input type="number" step="0.01" class="edit-lab-qty" data-index="${l.index}" value="${l.qty}"></td>
-            </tr>`;
-        });
-        html += '</tbody></table>';
-        labContainer.innerHTML = html;
-    } else {
-        labContainer.innerHTML = '<p>No labour defined.</p>';
+    tr.innerHTML = `
+        <td>
+            <input type="text" class="mat-search-input" list="material-list" 
+                   value="${inputValue}" placeholder="Type to search..." style="width: 100%;">
+            <input type="hidden" class="mat-id-input" value="${item ? item.index : ''}"> 
+        </td>
+        <td>
+            <input type="number" step="0.01" class="mat-qty-input" value="${qtyValue}" style="width: 100%;">
+        </td>
+        <td style="text-align: center;">
+            <button class="btn btn-sm" onclick="this.closest('tr').remove()" style="color: red;">&times;</button>
+        </td>
+    `;
+    tbody.appendChild(tr);
+}
+
+function renderLabourEditor(labour) {
+    const container = document.getElementById('edit-labour-container');
+    container.innerHTML = `
+        <table class="edit-table" id="labour-edit-table">
+            <thead>
+                <tr>
+                    <th style="width: 70%">Labour (Search by Name/Code)</th>
+                    <th style="width: 20%">Quantity</th>
+                    <th style="width: 10%">Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <button class="btn btn-sm btn-secondary" onclick="addLabourRow()" style="margin-top: 10px;">+ Add Labour</button>
+        <datalist id="labour-list">
+            ${masterLabour.map(l => `<option value="${l.Description} [Currently: ${l.lab_sl}]" data-id="${l.lab_sl}">Code: ${l['Labour Code']}</option>`).join('')}
+        </datalist>
+    `;
+
+    const tbody = container.querySelector('tbody');
+    labour.forEach(l => addLabourRow(l));
+}
+
+function addLabourRow(item = null) {
+    const tbody = document.querySelector('#labour-edit-table tbody');
+    const tr = document.createElement('tr');
+
+    let inputValue = '';
+    let qtyValue = item ? item.qty : 1;
+
+    if (item) {
+        const found = masterLabour.find(l => l.lab_sl == item.index);
+        inputValue = found ? `${found.Description} [Currently: ${found.lab_sl}]` : `Unknown Item (Index: ${item.index})`;
     }
+
+    tr.innerHTML = `
+        <td>
+            <input type="text" class="lab-search-input" list="labour-list" 
+                   value="${inputValue}" placeholder="Type to search..." style="width: 100%;">
+        </td>
+        <td>
+            <input type="number" step="0.01" class="lab-qty-input" value="${qtyValue}" style="width: 100%;">
+        </td>
+        <td style="text-align: center;">
+            <button class="btn btn-sm" onclick="this.closest('tr').remove()" style="color: red;">&times;</button>
+        </td>
+    `;
+    tbody.appendChild(tr);
 }
 
 function closeEditModal() {
@@ -509,31 +600,63 @@ function closeEditModal() {
     currentEditingStructureId = null;
 }
 
+// Helper to extract ID from input value "Description [Currently: ID]"
+function extractIdFromInput(value, masterList, idField) {
+    // 1. Try to parse " [Currently: ID]" format
+    const match = value.match(/\[Currently:\s*(\d+)\]$/);
+    if (match) return parseInt(match[1]);
+
+    // 2. Try to find exact name match
+    const found = masterList.find(i => i.Description === value);
+    if (found) return found[idField];
+
+    return null;
+}
+
 async function saveStructureEdits() {
     if (!currentEditingStructureId) return;
 
-    const userId = userSession.getUserId();
+    // Use server-side auth check or valid user ID logic
+    let userId = null;
+    try {
+        const user = await auth.getCurrentUser();
+        userId = user ? user.id : null;
+    } catch (e) {
+        // Fallback or legacy check if auth.getCurrentUser() is not available/working after revert
+        if (typeof userSession !== 'undefined') {
+            userId = userSession.getUserId();
+        }
+    }
+
     if (!userId) {
-        alert("User session error. Please reload.");
+        alert("User session error. Please reload or log in.");
         return;
     }
 
     // Gather Data
     const materials = [];
-    document.querySelectorAll('.edit-mat-qty').forEach(input => {
-        materials.push({
-            index: parseInt(input.dataset.index),
-            qty: parseFloat(input.value) || 0
-        });
-    });
+    const matRows = document.querySelectorAll('#material-edit-table tbody tr');
+    for (const tr of matRows) {
+        const val = tr.querySelector('.mat-search-input').value;
+        const qty = parseFloat(tr.querySelector('.mat-qty-input').value) || 0;
+
+        const id = extractIdFromInput(val, masterMaterials, 'mat_sl');
+        if (id && qty > 0) {
+            materials.push({ index: id, qty });
+        }
+    }
 
     const labour = [];
-    document.querySelectorAll('.edit-lab-qty').forEach(input => {
-        labour.push({
-            index: parseInt(input.dataset.index),
-            qty: parseFloat(input.value) || 0
-        });
-    });
+    const labRows = document.querySelectorAll('#labour-edit-table tbody tr');
+    for (const tr of labRows) {
+        const val = tr.querySelector('.lab-search-input').value;
+        const qty = parseFloat(tr.querySelector('.lab-qty-input').value) || 0;
+
+        const id = extractIdFromInput(val, masterLabour, 'lab_sl');
+        if (id && qty > 0) {
+            labour.push({ index: id, qty });
+        }
+    }
 
     try {
         const response = await fetch('/api/structures/fork-and-update', {
@@ -551,9 +674,6 @@ async function saveStructureEdits() {
         if (result.success) {
             alert("Changes saved! This customized structure is now yours.");
             closeEditModal();
-            // Reload structures to show the new custom version
-            // For simplicity, we trigger a full reload of the structure list logic
-            // Ideally we'd just update the local library, but a refresh ensures consistency
             window.location.reload();
         } else {
             alert("Failed to save changes: " + result.error);
