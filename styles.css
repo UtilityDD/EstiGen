@@ -47,6 +47,29 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-logo {
+            height: 60px;
+            width: auto;
+            object-fit: contain;
+            filter: brightness(1.1) contrast(1.05);
+            mix-blend-mode: screen;
+        }
+
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
         }
 
         .header h1 {
@@ -60,10 +83,41 @@
             font-weight: 600;
             opacity: 0.8;
             transition: opacity 0.2s;
+            white-space: nowrap;
         }
 
         .header a:hover {
             opacity: 1;
+        }
+
+        /* Responsive header for mobile */
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem;
+            }
+
+            .header-brand {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .header-logo {
+                height: 50px;
+            }
+
+            .header h1 {
+                font-size: 1.3rem;
+            }
+
+            .header-nav {
+                width: 100%;
+                justify-content: center;
+                gap: 1rem;
+            }
+
+            .header a {
+                font-size: 0.9rem;
+            }
         }
 
         .step {
