@@ -24,6 +24,34 @@
             </div>
         </div>
 
+        <!-- Progress Stepper -->
+        <div class="stepper">
+            <div class="step-indicator active" id="step-ind-1">
+                <div class="step-num">1</div>
+                <div class="step-label">Category</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step-indicator" id="step-ind-2">
+                <div class="step-num">2</div>
+                <div class="step-label">Voltage</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step-indicator" id="step-ind-3">
+                <div class="step-num">3</div>
+                <div class="step-label">Quantities</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step-indicator" id="step-ind-4">
+                <div class="step-num">4</div>
+                <div class="step-label">Project</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step-indicator" id="step-ind-5">
+                <div class="step-num">5</div>
+                <div class="step-label">Estimate</div>
+            </div>
+        </div>
+
         <!-- Step 1: Work Category -->
         <div id="step-1" class="step">
             <h2 class="step-title">Step 1: Select Work Category</h2>
@@ -54,6 +82,16 @@
         <!-- Step 3: Structure Types -->
         <div id="step-3" class="step">
             <h2 class="step-title">Step 3: Enter Structure Quantities</h2>
+
+            <!-- Quick Filter / Search -->
+            <div class="search-container">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="structure-search" placeholder="Search structures by name or code..."
+                        oninput="filterStructures(this.value)">
+                </div>
+            </div>
+
             <div id="structure-tabs-container">
                 <!-- Structure items will be dynamically inserted here -->
             </div>
@@ -195,6 +233,15 @@
                 <button class="btn btn-primary" onclick="saveStructureEdits()">Save Changes</button>
             </div>
         </div>
+    </div>
+
+    <!-- Floating Cost Summary Widget -->
+    <div id="floating-summary" class="floating-summary" style="display: none;">
+        <div class="summary-content">
+            <span class="summary-label">Estimated Total:</span>
+            <span id="summary-total" class="summary-total">₹0.00</span>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="goToStep(4)">Review & Save</button>
     </div>
 
     <script src="loading-utils.js"></script>

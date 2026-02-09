@@ -180,8 +180,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 let currentStep = 1;
 
 function goToStep(stepNumber) {
-    // Scroll to the top of the page on every step change
-    window.scrollTo(0, 0);
+    // Smooth scroll to the top of the container
+    const container = document.querySelector('.container');
+    if (container) {
+        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
     if (stepNumber === 3) {
         if (estimate.voltageLevels.length === 0) {
@@ -195,6 +200,13 @@ function goToStep(stepNumber) {
         document.getElementById('work-name').value = estimate.workName;
         document.getElementById('prepared-by').value = estimate.preparedBy;
         document.getElementById('surveyed-by').value = estimate.surveyedBy;
+
+        // Auto-focus first field
+        setTimeout(() => document.getElementById('work-name')?.focus(), 500);
+    }
+    if (stepNumber === 4.5) {
+        // Step 4.5 is a sub-step, auto-focus GST percent
+        setTimeout(() => document.getElementById('gst-percent')?.focus(), 500);
     }
     if (stepNumber === 5) {
         // Capture values from Step 4 and 4.5 and validate
@@ -223,12 +235,40 @@ function goToStep(stepNumber) {
         generateEstimate();
     }
 
+    // Update visuals
     document.getElementById(`step-${currentStep}`).classList.remove('active');
     document.getElementById(`step-${stepNumber}`).classList.add('active');
+
+    // Update Stepper
+    updateStepper(stepNumber);
+
+    // Auto-focus logic for step 3 (search) or other steps
+    if (stepNumber === 3) {
+        setTimeout(() => document.getElementById('structure-search')?.focus(), 500);
+    }
+
     currentStep = stepNumber;
 
     if (stepNumber === 1) { // Reset if going back to start
         resetEstimate();
+    }
+}
+
+function updateStepper(step) {
+    // Determine main step index (4.5 maps to step 4)
+    const mainStep = Math.floor(step);
+
+    for (let i = 1; i <= 5; i++) {
+        const ind = document.getElementById(`step-ind-${i}`);
+        if (!ind) continue;
+
+        ind.classList.remove('active', 'completed');
+
+        if (i < mainStep) {
+            ind.classList.add('completed');
+        } else if (i === mainStep) {
+            ind.classList.add('active');
+        }
     }
 }
 
@@ -261,26 +301,43 @@ function resetEstimate() {
 
 
 // --- STEP 3: STRUCTURES ---
-function renderStructureList() {
-    const tabsContainer = document.getElementById('structure-tabs-container');
+function filterStructures(query) {
+    renderStructureList(query);
+}
 
-    // Show skeleton loader while rendering
-    tabsContainer.innerHTML = createStructureListSkeleton();
+function renderStructureList(searchTerm = '') {
+    const tabsContainer = document.getElementById('structure-tabs-container');
+    const query = searchTerm.toLowerCase().trim();
+
+    // Show skeleton loader while rendering if it's the first time or searchTerm is empty
+    if (!searchTerm) {
+        tabsContainer.innerHTML = createStructureListSkeleton();
+    }
 
     // Use setTimeout to allow skeleton to render before processing
     setTimeout(() => {
-        tabsContainer.innerHTML = ''; // Clear skeleton
+        tabsContainer.innerHTML = ''; // Clear skeleton or previous results
 
         // --- DEBUGGING LOG ---
         console.log("--- Debugging Structure Filter ---");
         console.log("User selected voltage levels:", JSON.stringify(estimate.voltageLevels, null, 2));
-        console.log("First 5 structures from library with their voltages:", JSON.stringify(structureLibrary.slice(0, 5).map(s => ({ name: s.name, voltage: s.voltage })), null, 2));
         // --- END DEBUGGING LOG ---
 
         try {
             const relevantStructures = structureLibrary.filter(s => {
                 if (!s || !Array.isArray(s.voltage)) return false;
-                return s.voltage.some(v => estimate.voltageLevels.includes(v));
+
+                // Filter by voltage level
+                const matchesVoltage = s.voltage.some(v => estimate.voltageLevels.includes(v));
+                if (!matchesVoltage) return false;
+
+                // Filter by search term if provided
+                if (query) {
+                    return s.name.toLowerCase().includes(query) ||
+                        String(s.id).toLowerCase().includes(query);
+                }
+
+                return true;
             });
 
             if (relevantStructures.length === 0) {
@@ -452,6 +509,7 @@ function updateRouteLength(voltage, length) {
     if (!estimate.routeLengths[voltage]) estimate.routeLengths[voltage] = {};
     estimate.routeLengths[voltage].length = parseFloat(length) || 0;
     console.log('Updated Route Lengths:', estimate.routeLengths);
+    calculateRunningTotal();
 }
 
 function updateConductor(voltage, conductor) {
@@ -465,7 +523,67 @@ function updateStructureQuantity(structureId, quantity) {
     const numQuantity = parseInt(quantity, 10);
     if (numQuantity > 0) {
         estimate.structures[structureId] = numQuantity;
-    } else { delete estimate.structures[structureId]; }
+    } else {
+        delete estimate.structures[structureId];
+    }
+    calculateRunningTotal();
+}
+
+function calculateRunningTotal() {
+    let total = 0;
+
+    // Quick estimate based on structureLibrary data which is already in memory
+    for (const sid in estimate.structures) {
+        const qty = estimate.structures[sid];
+        const struct = structureLibrary.find(s => String(s.id) === String(sid));
+        if (!struct) continue;
+
+        // This is a rough estimation for the floating widget
+        // since full rates require complex logic. We'll use a simplified version
+        // or just rely on items that have pre-calculated rates if available.
+        // For now, let's trigger a light version of calculation or just show "Calculating..."
+    }
+
+    updateFloatingSummary();
+}
+
+async function updateFloatingSummary() {
+    const summaryEl = document.getElementById('floating-summary');
+    const totalEl = document.getElementById('summary-total');
+
+    if (Object.keys(estimate.structures).length > 0) {
+        summaryEl.style.display = 'flex';
+        totalEl.textContent = 'Updating...';
+
+        try {
+            // Call the same logic used for final generation but keep it lightweight
+            const payload = {
+                structures: estimate.structures,
+                structureLibrary: structureLibrary
+            };
+
+            const response = await fetch('/api/generate-estimate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            if (response.ok) {
+                const { materials, labour } = await response.json();
+                let subtotal = 0;
+                materials.forEach(m => subtotal += (m.cost || 0));
+                labour.forEach(l => subtotal += (l.cost || 0));
+
+                // Add basic GST (18%) for the widget total
+                const totalWithTax = subtotal * 1.18;
+                totalEl.textContent = `₹${totalWithTax.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+            }
+        } catch (e) {
+            console.error("Running total error:", e);
+        }
+    } else {
+        summaryEl.style.display = 'none';
+    }
 }
 
 // --- EDIT MODAL FUNCTIONS ---

@@ -123,12 +123,16 @@ const generateLimiter = rateLimit({
     }
 });
 
-// Middleware to parse JSON bodies and serve static files
+// Middleware to parse JSON bodies
 app.use(express.json());
-app.use(express.static(__dirname));
+
+// Move express.static AFTER API routes to avoid path collisions
+// app.use(express.static(__dirname)); // Moved to the end
 
 // Apply general rate limiter to all API routes
-app.use('/api/', apiLimiter);
+app.use('/api', apiLimiter);
+
+// --- API Routes ---
 
 // Import and use estimates routes
 const estimatesRoutes = require('./routes/estimates');
@@ -557,6 +561,10 @@ app.delete('/api/admin/labour/:id', strictLimiter, async (req, res) => {
         res.status(500).json({ message: 'Error deleting labour', details: error.message });
     }
 });
+
+// --- STATIC FILES ---
+// Serve static files after all API routes
+app.use(express.static(__dirname));
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
