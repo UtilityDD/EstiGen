@@ -164,19 +164,25 @@ async function forkStructure(supabase, structureId, userId, changes) {
         ...baseItem,
         user_id: userId,
         materials: changes.materials || baseItem.materials,
-        labour: changes.labour || baseItem.labour,
-        updated_at: new Date().toISOString()
+        labour: changes.labour || baseItem.labour
     };
 
     // Remove system fields we don't want to copy/write manually
-    delete newRecord.record_id;
     delete newRecord.created_at;
+    delete newRecord.updated_at;
 
-    // 3. Upsert based on (id, user_id) constraint
-    // The UNIQUE INDEX we added allows us to UPSERT by matching (id, user_id)
+    // IMPORTANT: If this is a FORK (not an update to existing custom), 
+    // we MUST remove the record_id of the default item so it inserts a new row.
+    if (!existingCustom) {
+        delete newRecord.record_id;
+    }
+
+    // 3. Upsert based on Primary Key (record_id)
+    // If record_id is present, it updates. If missing, it inserts.
+    // The DB unique index structures_id_user_idx protects us from logical duplicates.
     const { data: upserted, error: upsertError } = await supabase
         .from('structures')
-        .upsert(newRecord, { onConflict: 'id, user_id' })
+        .upsert(newRecord)
         .select()
         .single();
 

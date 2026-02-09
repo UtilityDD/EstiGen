@@ -47,14 +47,14 @@ app.use(helmet({
                 "https://cdn.jsdelivr.net" // For Supabase JS
             ],
             scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers like onclick
-            styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
             imgSrc: ["'self'", "data:", "https:"],
             connectSrc: [
                 "'self'",
                 process.env.SUPABASE_URL || "https://*.supabase.co", // Allow Supabase API calls
                 "https://cdnjs.cloudflare.com" // Allow fetching source maps
             ],
-            fontSrc: ["'self'", "data:"],
+            fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
             objectSrc: ["'none'"],
             upgradeInsecureRequests: [] // Force HTTPS in production
         }
@@ -280,24 +280,30 @@ app.post('/api/structures/update',
 
             // Update regular structures
             if (regularStructures.length > 0) {
+                // Sanitize to remove system fields that might cause schema cache errors
+                const sanitizedRegular = regularStructures.map(s => {
+                    const { updated_at, created_at, record_id, ...rest } = s;
+                    return rest;
+                });
+
                 const { error: structError } = await supabase
                     .from('structures')
-                    .upsert(regularStructures, { onConflict: 'id' });
+                    .upsert(sanitizedRegular);
 
                 if (structError) throw structError;
             }
 
             // Update special structures
             if (specialStructures.length > 0) {
-                // Remove 'voltage' field as it is likely not a column in special_structures table
+                // Remove 'voltage' and other non-column fields
                 const sanitizedSpecial = specialStructures.map(s => {
-                    const { voltage, ...rest } = s;
+                    const { voltage, updated_at, created_at, record_id, ...rest } = s;
                     return rest;
                 });
 
                 const { error: specialError } = await supabase
                     .from('special_structures')
-                    .upsert(sanitizedSpecial, { onConflict: 'id' });
+                    .upsert(sanitizedSpecial);
 
                 if (specialError) throw specialError;
             }
