@@ -212,25 +212,20 @@
     </div>
 
     <!-- Edit Modal -->
-    <div id="edit-structure-modal" class="edit-modal" style="display: none;">
-        <div class="edit-modal-content">
-            <span class="close-modal" onclick="closeEditModal()">&times;</span>
-            <h2 id="edit-modal-title">Edit Structure</h2>
-            <p id="edit-modal-desc" style="color: #666; margin-bottom: 15px;"></p>
-
-            <div class="edit-section">
-                <h3>Materials</h3>
-                <div id="edit-materials-container"></div>
+    <!-- Modern Edit Modal (Same as Admin) -->
+    <div id="edit-structure-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="edit-modal-title"><span>✏️</span> Edit Structure</h2>
+                <button class="modal-close" onclick="closeEditModal()">×</button>
             </div>
-
-            <div class="edit-section">
-                <h3>Labour</h3>
-                <div id="edit-labour-container"></div>
+            <p id="edit-modal-desc" style="padding: 1rem 2rem 0; color: #64748b; font-size: 0.9rem; margin-bottom: -1rem;"></p>
+            <div class="modal-body" id="edit-modal-body">
+                <!-- Structure form will be dynamically inserted here -->
             </div>
-
-            <div class="button-group" style="justify-content: flex-end; margin-top: 20px;">
+            <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="saveStructureEdits()">Save Changes</button>
+                <button class="btn btn-primary" id="save-structure-btn" onclick="saveStructureEdits()">Save Changes</button>
             </div>
         </div>
     </div>

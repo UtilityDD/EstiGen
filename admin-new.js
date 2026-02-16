@@ -374,7 +374,8 @@ function openModal(data = null) {
     const modalTitle = document.getElementById('modal-title');
     const modalBody = document.getElementById('modal-body');
 
-    modalTitle.textContent = data ? `Edit ${config.title}` : `Add New ${config.title.slice(0, -1)}`;
+    modal.classList.remove('view-mode');
+    modalTitle.innerHTML = data ? `Edit ${config.title}` : `<span>➕</span> Add New ${config.title.slice(0, -1)}`;
 
     // Special rendering for Structures (Search & Select UI)
     if (currentTable === 'structures' || currentTable === 'special_structures') {
@@ -459,31 +460,36 @@ function renderStructureEditor(container, data, isSpecial) {
     <form id="record-form" class="structure-form">
         <div class="form-grid">
             <div class="form-field">
-                <label>ID <span style="color:red">*</span></label>
-                <input type="text" name="id" value="${id}" required ${data ? 'readonly' : ''} placeholder="Unique ID">
+                <label>🆔 Unique ID <span style="color:red">*</span></label>
+                <input type="text" name="id" value="${id}" required ${data ? 'readonly' : ''} placeholder="e.g. pole-tangent">
             </div>
             <div class="form-field">
-                <label>Name <span style="color:red">*</span></label>
-                <input type="text" name="name" value="${name}" required>
+                <label>🏷️ Structure Name <span style="color:red">*</span></label>
+                <input type="text" name="name" value="${name}" required placeholder="Name of the structure">
             </div>
             <div class="form-field">
-                <label>Voltage</label>
-                <input type="text" name="voltage" value="${voltage}" ${isSpecial ? 'readonly' : ''}>
+                <label>⚡ Voltage Level</label>
+                <input type="text" name="voltage" value="${voltage}" ${isSpecial ? 'readonly' : ''} placeholder="e.g. 33 kV">
             </div>
             <div class="form-field full-width">
-                <label>Description</label>
-                <input type="text" name="description" value="${description}">
+                <label>📝 Detailed Description</label>
+                <input type="text" name="description" value="${description}" placeholder="Additional details about this structure">
             </div>
         </div>
 
         <div class="editor-section">
-            <h3>Materials</h3>
+            <h3>
+                <span>📦 Materials Requirements</span>
+                <small style="font-weight: normal; font-size: 0.8rem; opacity: 0.7;">Select items and specify quantities</small>
+            </h3>
             <div id="admin-materials-container">
                 <table class="edit-table" id="admin-mat-table">
-                    <thead><tr><th>Material</th><th>Qty</th><th></th></tr></thead>
+                    <thead><tr><th>Material Item</th><th style="width: 100px;">Qty</th><th style="width: 50px;"></th></tr></thead>
                     <tbody></tbody>
                 </table>
-                <button type="button" class="btn btn-sm btn-secondary" onclick="addMaterialRow()">+ Add Material</button>
+                <button type="button" class="btn-add-row" onclick="addMaterialRow()">
+                    <span>➕</span> Add New Material
+                </button>
             </div>
             <datalist id="admin-material-list">
                  ${masterMaterials.map(m => `<option value="${m.Description} [Currently: ${m.mat_sl}]" data-id="${m.mat_sl}">Code: ${m['Material Code']}</option>`).join('')}
@@ -491,13 +497,18 @@ function renderStructureEditor(container, data, isSpecial) {
         </div>
 
         <div class="editor-section">
-            <h3>Labour</h3>
+            <h3>
+                <span>👷 Labour Specification</span>
+                <small style="font-weight: normal; font-size: 0.8rem; opacity: 0.7;">Specify labour hours or activities</small>
+            </h3>
             <div id="admin-labour-container">
                 <table class="edit-table" id="admin-lab-table">
-                    <thead><tr><th>Labour Item</th><th>Qty</th><th></th></tr></thead>
+                    <thead><tr><th>Labour Activity</th><th style="width: 100px;">Qty</th><th style="width: 50px;"></th></tr></thead>
                     <tbody></tbody>
                 </table>
-                <button type="button" class="btn btn-sm btn-secondary" onclick="addLabourRow()">+ Add Labour</button>
+                <button type="button" class="btn-add-row" onclick="addLabourRow()">
+                    <span>➕</span> Add New Labour
+                </button>
             </div>
             <datalist id="admin-labour-list">
                 ${masterLabour.map(l => `<option value="${l.Description} [Currently: ${l.lab_sl}]" data-id="${l.lab_sl}">Code: ${l['Labour Code']}</option>`).join('')}
@@ -521,17 +532,42 @@ function addMaterialRow(item = null) {
     let qty = item ? (item.qty || 0) : 1;
     let idx = item ? (item.index || item.id) : ''; // handle both index or id keys
 
+    let step = "0.01";
     if (idx) {
         const found = masterMaterials.find(m => m.mat_sl == idx);
-        inputValue = found ? `${found.Description} [Currently: ${found.mat_sl}]` : `Item ${idx}`;
+        if (found) {
+            inputValue = `${found.Description} [Currently: ${found.mat_sl}]`;
+            if (found.Unit && found.Unit.toUpperCase() === 'NOS') step = "1";
+        } else {
+            inputValue = `Item ${idx}`;
+        }
     }
 
     tr.innerHTML = `
-        <td><input type="text" class="mat-search-input" list="admin-material-list" value="${inputValue}" placeholder="Search..." style="width:100%"></td>
-        <td><input type="number" step="0.01" class="mat-qty-input" value="${qty}" style="width:70px"></td>
-        <td><button type="button" onclick="this.closest('tr').remove()" style="color:red">&times;</button></td>
+        <td><input type="text" class="mat-search-input" list="admin-material-list" value="${inputValue}" placeholder="Search materials..." style="width:100%"></td>
+        <td style="width: 100px;"><input type="number" step="${step}" class="mat-qty-input" value="${qty}" style="text-align: right;"></td>
+        <td style="width: 50px;"><button type="button" class="remove-row-btn" onclick="this.closest('tr').remove()" title="Remove row">🗑️</button></td>
     `;
     tbody.appendChild(tr);
+
+    // Dynamic step adjustment based on Unit
+    const searchInput = tr.querySelector('.mat-search-input');
+    const qtyInput = tr.querySelector('.mat-qty-input');
+
+    searchInput.addEventListener('input', () => {
+        const val = searchInput.value;
+        const id = extractIdFromInput(val, masterMaterials, 'mat_sl');
+        if (id) {
+            const found = masterMaterials.find(m => m.mat_sl == id);
+            if (found && found.Unit && found.Unit.toUpperCase() === 'NOS') {
+                qtyInput.step = "1";
+                // Optionally round existing value
+                if (qtyInput.value % 1 !== 0) qtyInput.value = Math.round(qtyInput.value);
+            } else {
+                qtyInput.step = "0.01";
+            }
+        }
+    });
 }
 
 function addLabourRow(item = null) {
@@ -542,20 +578,45 @@ function addLabourRow(item = null) {
     let qty = item ? (item.qty || 0) : 1;
     let idx = item ? (item.index || item.id) : '';
 
+    let step = "0.01";
     if (idx) {
         const found = masterLabour.find(l => l.lab_sl == idx);
-        inputValue = found ? `${found.Description} [Currently: ${found.lab_sl}]` : `Item ${idx}`;
+        if (found) {
+            inputValue = `${found.Description} [Currently: ${found.lab_sl}]`;
+            if (found.Unit && found.Unit.toUpperCase() === 'NOS') step = "1";
+        } else {
+            inputValue = `Item ${idx}`;
+        }
     }
 
     tr.innerHTML = `
-        <td><input type="text" class="lab-search-input" list="admin-labour-list" value="${inputValue}" placeholder="Search..." style="width:100%"></td>
-        <td><input type="number" step="0.01" class="lab-qty-input" value="${qty}" style="width:70px"></td>
-        <td><button type="button" onclick="this.closest('tr').remove()" style="color:red">&times;</button></td>
+        <td><input type="text" class="lab-search-input" list="admin-labour-list" value="${inputValue}" placeholder="Search labour..." style="width:100%"></td>
+        <td style="width: 100px;"><input type="number" step="${step}" class="lab-qty-input" value="${qty}" style="text-align: right;"></td>
+        <td style="width: 50px;"><button type="button" class="remove-row-btn" onclick="this.closest('tr').remove()" title="Remove row">🗑️</button></td>
     `;
     tbody.appendChild(tr);
+
+    // Dynamic step adjustment
+    const searchInput = tr.querySelector('.lab-search-input');
+    const qtyInput = tr.querySelector('.lab-qty-input');
+
+    searchInput.addEventListener('input', () => {
+        const val = searchInput.value;
+        const id = extractIdFromInput(val, masterLabour, 'lab_sl');
+        if (id) {
+            const found = masterLabour.find(l => l.lab_sl == id);
+            if (found && found.Unit && found.Unit.toUpperCase() === 'NOS') {
+                qtyInput.step = "1";
+                if (qtyInput.value % 1 !== 0) qtyInput.value = Math.round(qtyInput.value);
+            } else {
+                qtyInput.step = "0.01";
+            }
+        }
+    });
 }
 
 function extractIdFromInput(value, masterList, idField) {
+    if (!value) return null;
     const match = value.match(/\[Currently:\s*(\d+)\]$/);
     if (match) return parseInt(match[1]);
     const found = masterList.find(i => i.Description === value);
@@ -606,14 +667,23 @@ async function saveRecord() {
         // Convert back to Semicolon String if that is the DB format
         data.materials = materials.map(m => `${m.index}:${m.qty}`).join(';');
         data.labour = labour.map(l => `${l.index}:${l.qty}`).join(';');
+
+        // IMPORTANT: Include record_id and user_id for updates
+        const editId = document.getElementById('edit-modal').dataset.editId;
+        if (editId) {
+            const original = allData.find(r => String(getRowId(r)) === String(editId));
+            if (original) {
+                if (original.record_id) data.record_id = original.record_id;
+                if (original.user_id) data.user_id = original.user_id;
+            }
+        }
     }
 
     // API Expects array of updates for /api/structures/update
-    // But this generic save might be used for single item creation too?
-    // The previous implementation was a placeholder. 
-    // We'll wrap it in array for /api/structures/update or fallback.
+    const btn = document.getElementById('save-record-btn');
+    btn.classList.add('btn-loading');
 
-    showNotification('Saving...', 'warning');
+    const loadingToast = showNotification('Saving changes...', 'loading');
 
     try {
         let endpoint = config.apiEndpoint;
@@ -626,9 +696,9 @@ async function saveRecord() {
             body = JSON.stringify([data]);
         } else {
             // Materials/Labour updates
-            if (form.closest('.modal').dataset.editId) {
+            if (document.getElementById('edit-modal').dataset.editId) {
                 // Edit existing
-                const id = form.closest('.modal').dataset.editId;
+                const id = document.getElementById('edit-modal').dataset.editId;
                 method = 'PUT';
                 endpoint = `${config.apiEndpoint}/${id}`;
             }
@@ -641,6 +711,9 @@ async function saveRecord() {
             body: body
         });
 
+        // Remove loading toast
+        if (loadingToast) loadingToast.remove();
+
         if (!response.ok) {
             const err = await response.json();
             throw new Error(err.message || 'Save failed');
@@ -650,7 +723,10 @@ async function saveRecord() {
         closeModal();
         loadTableData();
     } catch (error) {
+        if (loadingToast) loadingToast.remove();
         showNotification(`Error saving: ${error.message}`, 'error');
+    } finally {
+        btn.classList.remove('btn-loading');
     }
 }
 
@@ -659,13 +735,9 @@ function viewRecord(id) {
     const record = allData.find(r => String(getRowId(r)) === String(id));
     if (record) {
         openModal(record);
-        // Disable form fields for view mode
-        setTimeout(() => {
-            document.querySelectorAll('#record-form input, #record-form textarea').forEach(field => {
-                field.disabled = true;
-            });
-            document.getElementById('save-record-btn').style.display = 'none';
-        }, 100);
+        const modal = document.getElementById('edit-modal');
+        modal.classList.add('view-mode');
+        document.getElementById('modal-title').innerHTML = `<span>👁️</span> Viewing ${tableConfigs[currentTable].title.slice(0, -1)}`;
     } else {
         showNotification('Record not found', 'error');
     }
@@ -676,10 +748,9 @@ function editRecord(id) {
     const record = allData.find(r => String(getRowId(r)) === String(id));
     if (record) {
         openModal(record);
-        // Ensure save button is visible
-        setTimeout(() => {
-            document.getElementById('save-record-btn').style.display = 'inline-block';
-        }, 100);
+        const modal = document.getElementById('edit-modal');
+        modal.classList.remove('view-mode');
+        document.getElementById('modal-title').innerHTML = `<span>✏️</span> Editing ${tableConfigs[currentTable].title.slice(0, -1)}`;
     } else {
         showNotification('Record not found', 'error');
     }
@@ -773,14 +844,38 @@ function showLoading(show) {
 }
 
 function showNotification(message, type = 'success') {
-    const notification = document.getElementById('notification');
-    const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
-    notification.textContent = `${icon} ${message}`;
-    notification.className = `notification ${type}`;
+    const container = document.getElementById('notification-container');
+    if (!container) return;
 
-    setTimeout(() => {
-        notification.classList.add('hidden');
-    }, 4000);
+    const toast = document.createElement('div');
+    toast.className = `notification ${type}`;
+
+    const icons = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        loading: '⏳'
+    };
+
+    toast.innerHTML = `
+        <div class="toast-icon">${icons[type] || 'ℹ️'}</div>
+        <div class="toast-message">${message}</div>
+    `;
+
+    container.appendChild(toast);
+
+    // Fade in
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    // Auto remove except for loading
+    if (type !== 'loading') {
+        setTimeout(() => {
+            toast.classList.add('removing');
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+
+    return toast;
 }
 
 function updateDeleteButton() {

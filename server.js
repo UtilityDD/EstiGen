@@ -280,38 +280,75 @@ app.post('/api/structures/update',
 
             // Update regular structures
             if (regularStructures.length > 0) {
-                // Sanitize to remove system fields that might cause schema cache errors
-                const sanitizedRegular = regularStructures.map(s => {
-                    const { updated_at, created_at, record_id, ...rest } = s;
-                    return rest;
-                });
+                console.log(`Processing ${regularStructures.length} regular structures...`);
+                for (const s of regularStructures) {
+                    const { updated_at, created_at, ...rest } = s;
 
-                const { error: structError } = await supabase
-                    .from('structures')
-                    .upsert(sanitizedRegular);
+                    // Handle voltage: ensure it's an array for the 'structures' table
+                    if (rest.voltage && !Array.isArray(rest.voltage)) {
+                        if (typeof rest.voltage === 'string') {
+                            rest.voltage = rest.voltage.split(',').map(v => v.trim()).filter(v => v);
+                        } else {
+                            rest.voltage = [rest.voltage];
+                        }
+                    }
 
-                if (structError) throw structError;
+                    if (rest.record_id) {
+                        const { error: structError } = await supabase
+                            .from('structures')
+                            .update(rest)
+                            .eq('record_id', rest.record_id);
+                        if (structError) {
+                            console.error(`Error updating structure ${rest.id}:`, structError);
+                            throw structError;
+                        }
+                    } else {
+                        const { error: structError } = await supabase
+                            .from('structures')
+                            .insert([rest]);
+                        if (structError) {
+                            console.error(`Error inserting structure ${rest.id}:`, structError);
+                            throw structError;
+                        }
+                    }
+                }
             }
 
             // Update special structures
             if (specialStructures.length > 0) {
-                // Remove 'voltage' and other non-column fields
-                const sanitizedSpecial = specialStructures.map(s => {
-                    const { voltage, updated_at, created_at, record_id, ...rest } = s;
-                    return rest;
-                });
+                console.log(`Processing ${specialStructures.length} special structures...`);
+                for (const s of specialStructures) {
+                    const { updated_at, created_at, ...rest } = s;
 
-                const { error: specialError } = await supabase
-                    .from('special_structures')
-                    .upsert(sanitizedSpecial);
-
-                if (specialError) throw specialError;
+                    if (rest.record_id) {
+                        const { error: specialError } = await supabase
+                            .from('special_structures')
+                            .update(rest)
+                            .eq('record_id', rest.record_id);
+                        if (specialError) {
+                            console.error(`Error updating special structure ${rest.id}:`, specialError);
+                            throw specialError;
+                        }
+                    } else {
+                        const { error: specialError } = await supabase
+                            .from('special_structures')
+                            .insert([rest]);
+                        if (specialError) {
+                            console.error(`Error inserting special structure ${rest.id}:`, specialError);
+                            throw specialError;
+                        }
+                    }
+                }
             }
 
             res.status(200).json({ message: 'Structures updated successfully!' });
         } catch (error) {
-            console.error("Error writing structure data to Supabase:", error.message);
-            res.status(500).json({ message: 'An error occurred while saving data.', details: error.message });
+            console.error("Error writing structure data to Supabase:", error.message || error);
+            res.status(500).json({
+                message: 'An error occurred while saving data.',
+                details: error.message || 'Unknown error',
+                hint: error.hint || ''
+            });
         }
     });
 

@@ -445,7 +445,7 @@ function renderStructureList(searchTerm = '') {
                         </td>
                         <td><input type="number" id="qty-${structure.id}" min="0" value="${quantity}" onchange="updateStructureQuantity('${structure.id}', this.value)" style="text-align: center;"></td>
                         <td style="text-align: center;">
-                            <button class="btn btn-secondary btn-sm" onclick="openEditModal('${structure.id}')" title="Edit Structure Details">✏️ Edit</button>
+                            <button class="btn btn-secondary btn-sm" onclick="openEditModal('${structure.id}')" title="View Structure Details">👁️ Details</button>
                         </td>
                     </tr>
                 `;
@@ -617,118 +617,180 @@ function openEditModal(structureId) {
     }
 
     currentEditingStructureId = structureId;
-    document.getElementById('edit-modal-title').textContent = `Edit: ${structure.name}`;
-    document.getElementById('edit-modal-desc').textContent = structure.description || 'No description available.';
-    document.getElementById('edit-structure-modal').style.display = 'block';
+    const modal = document.getElementById('edit-structure-modal');
+    const modalTitle = document.getElementById('edit-modal-title');
+    const modalBody = document.getElementById('edit-modal-body');
+    const modalDesc = document.getElementById('edit-modal-desc');
 
-    renderMaterialEditor(structure.materials || []);
-    renderLabourEditor(structure.labour || []);
+    modalTitle.innerHTML = `<span>👁️</span> Structure Details: ${structure.name}`;
+    modalDesc.textContent = structure.description || 'No description available.';
+
+    // Apply view-only mode
+    modal.classList.add('view-mode');
+
+    renderStructureEditor(modalBody, structure);
+
+    modal.classList.remove('hidden');
 }
 
-function renderMaterialEditor(materials) {
-    const container = document.getElementById('edit-materials-container');
-    container.innerHTML = `
-        <table class="edit-table" id="material-edit-table">
-            <thead>
-                <tr>
-                    <th style="width: 70%">Material (Search by Name/Code)</th>
-                    <th style="width: 20%">Quantity</th>
-                    <th style="width: 10%">Action</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-        <button class="btn btn-sm btn-secondary" onclick="addMaterialRow()" style="margin-top: 10px;">+ Add Material</button>
-        <datalist id="material-list">
-            ${masterMaterials.map(m => `<option value="${m.Description} [Currently: ${m.mat_sl}]" data-id="${m.mat_sl}">Code: ${m['Material Code']}</option>`).join('')}
-        </datalist>
+function renderStructureEditor(container, data) {
+    const { id, name, voltage, description, materials, labour } = data;
+
+    let html = `
+    <div class="admin-only-notice">
+        <span>⚠️</span>
+        <div><strong>Read-Only View:</strong> Structure specifications can only be modified by administrators via the Admin Portal.</div>
+    </div>
+    <form id="record-form" class="structure-form">
+        <div class="form-grid">
+            <div class="form-field">
+                <label>🆔 Unique ID</label>
+                <input type="text" name="id" value="${id}" readonly>
+            </div>
+            <div class="form-field">
+                <label>🏷️ Structure Name</label>
+                <input type="text" name="name" value="${name}" readonly>
+            </div>
+            <div class="form-field">
+                <label>⚡ Voltage Level</label>
+                <input type="text" name="voltage" value="${voltage || ''}" readonly>
+            </div>
+        </div>
+
+        <div class="editor-section">
+            <h3>
+                <span>📦 Materials Requirements</span>
+                <small style="font-weight: normal; font-size: 0.8rem; opacity: 0.7;">Customize items and quantities</small>
+            </h3>
+            <div id="admin-materials-container">
+                <table class="edit-table" id="material-edit-table">
+                    <thead><tr><th>Material Item</th><th style="width: 100px;">Qty</th><th style="width: 50px;"></th></tr></thead>
+                    <tbody></tbody>
+                </table>
+                <button type="button" class="btn-add-row" onclick="addMaterialRow()">
+                    <span>➕</span> Add New Material
+                </button>
+            </div>
+            <datalist id="material-list">
+                 ${masterMaterials.map(m => `<option value="${m.Description} [Currently: ${m.mat_sl}]" data-id="${m.mat_sl}">Code: ${m['Material Code']}</option>`).join('')}
+            </datalist>
+        </div>
+
+        <div class="editor-section">
+            <h3>
+                <span>👷 Labour Specification</span>
+                <small style="font-weight: normal; font-size: 0.8rem; opacity: 0.7;">Customize labour activities</small>
+            </h3>
+            <div id="admin-labour-container">
+                <table class="edit-table" id="labour-edit-table">
+                    <thead><tr><th>Labour Activity</th><th style="width: 100px;">Qty</th><th style="width: 50px;"></th></tr></thead>
+                    <tbody></tbody>
+                </table>
+                <button type="button" class="btn-add-row" onclick="addLabourRow()">
+                    <span>➕</span> Add New Labour
+                </button>
+            </div>
+            <datalist id="labour-list">
+                ${masterLabour.map(l => `<option value="${l.Description} [Currently: ${l.lab_sl}]" data-id="${l.lab_sl}">Code: ${l['Labour Code']}</option>`).join('')}
+            </datalist>
+        </div>
+    </form>
     `;
 
-    const tbody = container.querySelector('tbody');
-    materials.forEach(m => addMaterialRow(m));
+    container.innerHTML = html;
+
+    // Populate rows
+    if (Array.isArray(materials)) materials.forEach(m => addMaterialRow(m));
+    if (Array.isArray(labour)) labour.forEach(l => addLabourRow(l));
 }
 
 function addMaterialRow(item = null) {
     const tbody = document.querySelector('#material-edit-table tbody');
+    if (!tbody) return;
     const tr = document.createElement('tr');
 
     let inputValue = '';
     let qtyValue = item ? item.qty : 1;
+    let step = "0.01";
 
     if (item) {
-        // Try to find the name from the master list using the index/ID
         const found = masterMaterials.find(m => m.mat_sl == item.index);
-        inputValue = found ? `${found.Description} [Currently: ${found.mat_sl}]` : `Unknown Item (Index: ${item.index})`;
+        if (found) {
+            inputValue = `${found.Description} [Currently: ${found.mat_sl}]`;
+            if (found.Unit && found.Unit.toUpperCase() === 'NOS') step = "1";
+        }
     }
 
     tr.innerHTML = `
-        <td>
-            <input type="text" class="mat-search-input" list="material-list" 
-                   value="${inputValue}" placeholder="Type to search..." style="width: 100%;">
-            <input type="hidden" class="mat-id-input" value="${item ? item.index : ''}"> 
-        </td>
-        <td>
-            <input type="number" step="0.01" class="mat-qty-input" value="${qtyValue}" style="width: 100%;">
-        </td>
-        <td style="text-align: center;">
-            <button class="btn btn-sm" onclick="this.closest('tr').remove()" style="color: red;">&times;</button>
-        </td>
+        <td><input type="text" class="mat-search-input" list="material-list" value="${inputValue}" placeholder="Search materials..." style="width:100%"></td>
+        <td style="width: 100px;"><input type="number" step="${step}" class="mat-qty-input" value="${qtyValue}" style="text-align: right;"></td>
+        <td style="width: 50px;"><button type="button" class="remove-row-btn" onclick="this.closest('tr').remove()" title="Remove row">🗑️</button></td>
     `;
     tbody.appendChild(tr);
-}
 
-function renderLabourEditor(labour) {
-    const container = document.getElementById('edit-labour-container');
-    container.innerHTML = `
-        <table class="edit-table" id="labour-edit-table">
-            <thead>
-                <tr>
-                    <th style="width: 70%">Labour (Search by Name/Code)</th>
-                    <th style="width: 20%">Quantity</th>
-                    <th style="width: 10%">Action</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-        <button class="btn btn-sm btn-secondary" onclick="addLabourRow()" style="margin-top: 10px;">+ Add Labour</button>
-        <datalist id="labour-list">
-            ${masterLabour.map(l => `<option value="${l.Description} [Currently: ${l.lab_sl}]" data-id="${l.lab_sl}">Code: ${l['Labour Code']}</option>`).join('')}
-        </datalist>
-    `;
-
-    const tbody = container.querySelector('tbody');
-    labour.forEach(l => addLabourRow(l));
+    // Dynamic step adjustment
+    const searchInput = tr.querySelector('.mat-search-input');
+    const qtyInput = tr.querySelector('.mat-qty-input');
+    searchInput.addEventListener('input', () => {
+        const val = searchInput.value;
+        const id = extractIdFromInput(val, masterMaterials, 'mat_sl');
+        if (id) {
+            const found = masterMaterials.find(m => m.mat_sl == id);
+            if (found && found.Unit && found.Unit.toUpperCase() === 'NOS') {
+                qtyInput.step = "1";
+                if (qtyInput.value % 1 !== 0) qtyInput.value = Math.round(qtyInput.value);
+            } else {
+                qtyInput.step = "0.01";
+            }
+        }
+    });
 }
 
 function addLabourRow(item = null) {
     const tbody = document.querySelector('#labour-edit-table tbody');
+    if (!tbody) return;
     const tr = document.createElement('tr');
 
     let inputValue = '';
     let qtyValue = item ? item.qty : 1;
+    let step = "0.01";
 
     if (item) {
         const found = masterLabour.find(l => l.lab_sl == item.index);
-        inputValue = found ? `${found.Description} [Currently: ${found.lab_sl}]` : `Unknown Item (Index: ${item.index})`;
+        if (found) {
+            inputValue = `${found.Description} [Currently: ${found.lab_sl}]`;
+            if (found.Unit && found.Unit.toUpperCase() === 'NOS') step = "1";
+        }
     }
 
     tr.innerHTML = `
-        <td>
-            <input type="text" class="lab-search-input" list="labour-list" 
-                   value="${inputValue}" placeholder="Type to search..." style="width: 100%;">
-        </td>
-        <td>
-            <input type="number" step="0.01" class="lab-qty-input" value="${qtyValue}" style="width: 100%;">
-        </td>
-        <td style="text-align: center;">
-            <button class="btn btn-sm" onclick="this.closest('tr').remove()" style="color: red;">&times;</button>
-        </td>
+        <td><input type="text" class="lab-search-input" list="labour-list" value="${inputValue}" placeholder="Search labour..." style="width:100%"></td>
+        <td style="width: 100px;"><input type="number" step="${step}" class="lab-qty-input" value="${qtyValue}" style="text-align: right;"></td>
+        <td style="width: 50px;"><button type="button" class="remove-row-btn" onclick="this.closest('tr').remove()" title="Remove row">🗑️</button></td>
     `;
     tbody.appendChild(tr);
+
+    // Dynamic step adjustment
+    const searchInput = tr.querySelector('.lab-search-input');
+    const qtyInput = tr.querySelector('.lab-qty-input');
+    searchInput.addEventListener('input', () => {
+        const val = searchInput.value;
+        const id = extractIdFromInput(val, masterLabour, 'lab_sl');
+        if (id) {
+            const found = masterLabour.find(l => l.lab_sl == id);
+            if (found && found.Unit && found.Unit.toUpperCase() === 'NOS') {
+                qtyInput.step = "1";
+                if (qtyInput.value % 1 !== 0) qtyInput.value = Math.round(qtyInput.value);
+            } else {
+                qtyInput.step = "0.01";
+            }
+        }
+    });
 }
 
 function closeEditModal() {
-    document.getElementById('edit-structure-modal').style.display = 'none';
+    const modal = document.getElementById('edit-structure-modal');
+    modal.classList.add('hidden');
     currentEditingStructureId = null;
 }
 
@@ -748,20 +810,27 @@ function extractIdFromInput(value, masterList, idField) {
 async function saveStructureEdits() {
     if (!currentEditingStructureId) return;
 
+    const saveBtn = document.getElementById('save-structure-btn');
+    saveBtn.classList.add('btn-loading');
+
     // Use server-side auth check or valid user ID logic
     let userId = null;
     try {
-        const user = await auth.getCurrentUser();
-        userId = user ? user.id : null;
-    } catch (e) {
-        // Fallback or legacy check if auth.getCurrentUser() is not available/working after revert
-        if (typeof userSession !== 'undefined') {
+        if (typeof auth !== 'undefined' && auth.getCurrentUser) {
+            const user = await auth.getCurrentUser();
+            userId = user ? user.id : null;
+        }
+
+        if (!userId && typeof userSession !== 'undefined') {
             userId = userSession.getUserId();
         }
+    } catch (e) {
+        console.warn("Auth check failed, trying session fallback", e);
     }
 
     if (!userId) {
         alert("User session error. Please reload or log in.");
+        saveBtn.classList.remove('btn-loading');
         return;
     }
 
@@ -814,6 +883,8 @@ async function saveStructureEdits() {
     } catch (error) {
         console.error("Save error:", error);
         alert("An error occurred while saving.");
+    } finally {
+        saveBtn.classList.remove('btn-loading');
     }
 }
 
