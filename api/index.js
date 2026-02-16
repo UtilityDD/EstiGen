@@ -9,6 +9,9 @@ const { supabase } = require('./supabase-config');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust Vercel's proxy for accurate rate limiting by IP
+app.set('trust proxy', 1);
+
 // ============================================
 // VALIDATION ERROR HANDLER MIDDLEWARE
 // ============================================
@@ -106,10 +109,10 @@ const strictLimiter = rateLimit({
 // Very strict limiter for expensive operations like estimate generation
 const generateLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute window
-    max: 1, // Max 1 estimate generation per minute
+    max: 30, // Relaxed to 30 per minute to accommodate live cost updates
     message: {
         error: 'Rate limit exceeded',
-        message: 'You can only generate 1 estimate per minute. Please wait before generating another.',
+        message: 'You are generating estimates too quickly. Please wait a moment.',
         retryAfter: '1 minute'
     },
     standardHeaders: true,
@@ -117,8 +120,8 @@ const generateLimiter = rateLimit({
     handler: (req, res) => {
         res.status(429).json({
             error: 'Rate limit exceeded',
-            message: 'You can only generate 1 estimate per minute. Please wait before generating another.',
-            retryAfter: 60 // seconds
+            message: 'You are generating estimates too quickly. Please wait a moment.',
+            retryAfter: 5 // seconds
         });
     }
 });
