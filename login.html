@@ -172,6 +172,14 @@
             const user = await getCurrentUser();
             if (user) {
                 const profile = await getUserProfile(user.id);
+
+                // 1. Force password change
+                if (profile && profile.must_change_password) {
+                    window.location.href = 'change-password.html';
+                    return;
+                }
+
+                // 2. Admin vs User Role
                 if (profile && profile.role === 'admin') {
                     window.location.href = 'admin.html';
                 } else {

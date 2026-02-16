@@ -46,13 +46,20 @@ async function loginUser(email, password) {
 // Legacy alias for admin login (to be safe)
 async function login(email, password) {
     const data = await loginUser(email, password);
-    // Fetch profile to verify admin status
+    // Fetch profile to verify status
     if (data.user) {
         const profile = await getUserProfile(data.user.id);
+
+        // 1. Forced change priority
+        if (profile && profile.must_change_password) {
+            window.location.href = 'change-password.html';
+            return data;
+        }
+
+        // 2. Role redirection
         if (profile && profile.role === 'admin') {
             window.location.href = 'admin.html';
         } else {
-            // Not an admin, send to generator
             window.location.href = 'index.html';
         }
     }
@@ -107,7 +114,46 @@ async function checkAuth(customRedirect = 'user-login.html') {
         window.location.href = customRedirect;
         return null;
     }
+
+    // Check if password change is required
+    const profile = await getUserProfile(user.id);
+    if (profile && profile.must_change_password) {
+        // If they are not already on the change-password page, redirect them
+        if (!window.location.pathname.includes('change-password.html')) {
+            window.location.href = 'change-password.html';
+            return null;
+        }
+    } else if (window.location.pathname.includes('change-password.html')) {
+        // If they don't need to change password but are on the change page, send to index
+        window.location.href = 'index.html';
+        return null;
+    }
+
     return user;
+}
+
+/**
+ * Update user's password and clear the reset flag
+ * @param {string} newPassword 
+ */
+async function updatePassword(newPassword) {
+    const client = await initSupabase();
+    if (!client) throw new Error('System unavailable');
+
+    // 1. Update Auth Password
+    const { error: authError } = await client.auth.updateUser({
+        password: newPassword
+    });
+    if (authError) throw authError;
+
+    // 2. Clear flag in profile
+    const user = await getCurrentUser();
+    const { error: profileError } = await client.from('profiles')
+        .update({ must_change_password: false })
+        .eq('id', user.id);
+
+    if (profileError) throw profileError;
+    return true;
 }
 
 // Export as a global object as well for convenience
@@ -117,6 +163,7 @@ window.auth = {
     logout,
     getCurrentUser,
     getUserProfile,
+    updatePassword,
     checkAuth,
     initSupabase
 };
@@ -127,3 +174,4 @@ window.getCurrentUser = getCurrentUser;
 window.checkAuth = checkAuth;
 window.logout = logout;
 window.getUserProfile = getUserProfile;
+window.updatePassword = updatePassword;
