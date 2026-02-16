@@ -607,7 +607,7 @@ app.delete('/api/admin/labour/:id', strictLimiter, async (req, res) => {
 
 // --- STATIC FILES ---
 // Serve static files after all API routes
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, '..')));
 
 // Export the app for Vercel
 module.exports = app;

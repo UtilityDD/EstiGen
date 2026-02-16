@@ -2,9 +2,9 @@
   "name": "estimate-generator",
   "version": "1.0.0",
   "description": "Electrical Network Construction Estimator",
-  "main": "server.js",
+  "main": "api/index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node api/index.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.86.0",
