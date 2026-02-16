@@ -609,8 +609,13 @@ app.delete('/api/admin/labour/:id', strictLimiter, async (req, res) => {
 // Serve static files after all API routes
 app.use(express.static(__dirname));
 
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-    console.log('Open your browser and navigate to http://localhost:3000 to use the estimator.');
-    console.log('Navigate to http://localhost:3000/admin.html to manage structures.');
-});
+// Export the app for Vercel
+module.exports = app;
+
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`Server is running on http://localhost:${PORT}`);
+        console.log('Open your browser and navigate to http://localhost:3000 to use the estimator.');
+        console.log('Navigate to http://localhost:3000/admin.html to manage structures.');
+    });
+}
