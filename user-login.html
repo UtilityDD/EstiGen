@@ -155,10 +155,9 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const user = await getCurrentUser();
             if (user) {
-                // If it's an admin, they can go to either, but let's send them to admin default
-                // For users, always send to index
-                const isAdmin = user.email.includes('admin'); // Simple check or use metadata if available
-                if (isAdmin) {
+                const profile = await getUserProfile(user.id);
+                // If it's an admin, send to admin. For others, index.
+                if (profile && profile.role === 'admin') {
                     window.location.href = 'admin.html';
                 } else {
                     window.location.href = 'index.html';
@@ -175,13 +174,20 @@
             const btn = document.getElementById('login-btn');
 
             errorDiv.style.display = 'none';
-            btn.textContent = 'Verifying...';
+            btn.textContent = 'Verifying Profile...';
             btn.disabled = true;
 
             try {
-                await loginUser(email, password);
-                // Successful user login goes to index
-                window.location.href = 'index.html';
+                const { user } = await loginUser(email, password);
+
+                // Fetch profile to see where to redirect
+                const profile = await getUserProfile(user.id);
+
+                if (profile && profile.role === 'admin') {
+                    window.location.href = 'admin.html';
+                } else {
+                    window.location.href = 'index.html';
+                }
             } catch (error) {
                 console.error(error);
                 errorDiv.textContent = error.message || 'Login failed. Please check credentials.';

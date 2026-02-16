@@ -46,9 +46,15 @@ async function loginUser(email, password) {
 // Legacy alias for admin login (to be safe)
 async function login(email, password) {
     const data = await loginUser(email, password);
-    // Admins usually redirect to admin.html
+    // Fetch profile to verify admin status
     if (data.user) {
-        window.location.href = 'admin.html';
+        const profile = await getUserProfile(data.user.id);
+        if (profile && profile.role === 'admin') {
+            window.location.href = 'admin.html';
+        } else {
+            // Not an admin, send to generator
+            window.location.href = 'index.html';
+        }
     }
     return data;
 }
@@ -74,6 +80,26 @@ async function getCurrentUser() {
     return session.user;
 }
 
+/**
+ * Fetch the user's profile/role from the profiles table
+ * @param {string} userId
+ */
+async function getUserProfile(userId) {
+    const client = await initSupabase();
+    if (!client || !userId) return null;
+
+    const { data, error } = await client.from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+    if (error) {
+        console.warn('Profile not found for user:', userId);
+        return null;
+    }
+    return data;
+}
+
 // Protect Page Guard - redirects to login if not authenticated
 async function checkAuth(customRedirect = 'user-login.html') {
     const user = await getCurrentUser();
@@ -90,6 +116,14 @@ window.auth = {
     login,
     logout,
     getCurrentUser,
+    getUserProfile,
     checkAuth,
     initSupabase
 };
+
+// Global helpers (to be used directly in HTML/other scripts)
+window.loginUser = loginUser;
+window.getCurrentUser = getCurrentUser;
+window.checkAuth = checkAuth;
+window.logout = logout;
+window.getUserProfile = getUserProfile;

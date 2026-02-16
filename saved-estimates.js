@@ -15,6 +15,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('user-name').textContent = user.user_metadata?.full_name || user.email.split('@')[0];
         document.getElementById('user-email').textContent = user.email;
         document.getElementById('user-initials').textContent = (user.user_metadata?.full_name || user.email)[0].toUpperCase();
+
+        // Fetch profile to check role for admin link
+        getUserProfile(user.id).then(profile => {
+            if (profile && profile.role === 'admin') {
+                const adminLink = document.getElementById('admin-dropdown-link');
+                if (adminLink) adminLink.classList.remove('hidden');
+            }
+        });
     }
 
     // 3. Add dropdown click handler

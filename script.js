@@ -36,10 +36,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('user-email').textContent = user.email;
         document.getElementById('user-initials').textContent = (user.user_metadata?.full_name || user.email)[0].toUpperCase();
 
-        // Show admin link if email contains admin (or check metadata)
-        if (user.email.includes('admin')) {
-            document.getElementById('admin-dropdown-link').classList.remove('hidden');
-        }
+        // Fetch profile to check role for admin link
+        getUserProfile(user.id).then(profile => {
+            if (profile && profile.role === 'admin') {
+                const adminLink = document.getElementById('admin-dropdown-link');
+                if (adminLink) adminLink.classList.remove('hidden');
+            }
+        });
     }
 
     // Dropdown click outside handler

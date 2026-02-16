@@ -107,13 +107,20 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js"></script>
     <script>
-        // Check auth immediately
-        // Check auth immediately
-        checkAuth().then(user => {
+        // Check auth immediately with role verification
+        (async function () {
+            const user = await checkAuth('login.html');
             if (user) {
-                document.querySelector('.admin-container').style.display = 'block';
+                const profile = await getUserProfile(user.id);
+                if (profile && profile.role === 'admin') {
+                    document.querySelector('.admin-container').style.display = 'block';
+                } else {
+                    // Not an admin, send to generator
+                    alert('⚠️ Access Denied: Admin privileges required.');
+                    window.location.href = 'index.html';
+                }
             }
-        });
+        })();
     </script>
     <script src="admin-new.js"></script>
 </body>
