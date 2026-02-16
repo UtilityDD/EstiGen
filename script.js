@@ -1,6 +1,12 @@
 // --- DATA SOURCES ---
 let structureLibrary = []; // Will be populated from the server
 
+// --- UI HELPERS ---
+function toggleUserDropdown() {
+    const dropdown = document.getElementById('user-dropdown');
+    if (dropdown) dropdown.classList.toggle('active');
+}
+
 // --- APPLICATION STATE ---
 const estimate = {
     workCategory: '',
@@ -23,12 +29,34 @@ const estimate = {
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Initialize User UI
+    if (window.currentUser) {
+        const user = window.currentUser;
+        document.getElementById('user-name').textContent = user.user_metadata?.full_name || user.email.split('@')[0];
+        document.getElementById('user-email').textContent = user.email;
+        document.getElementById('user-initials').textContent = (user.user_metadata?.full_name || user.email)[0].toUpperCase();
+
+        // Show admin link if email contains admin (or check metadata)
+        if (user.email.includes('admin')) {
+            document.getElementById('admin-dropdown-link').classList.remove('hidden');
+        }
+    }
+
+    // Dropdown click outside handler
+    document.addEventListener('click', (e) => {
+        const dropdown = document.getElementById('user-dropdown');
+        const trigger = document.getElementById('user-profile-trigger');
+        if (dropdown && trigger && !trigger.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.remove('active');
+        }
+    });
+
     // Show loading overlay while fetching structure data
-    showGlobalLoading('Loading structure library...');
+    showGlobalLoading('Syncing your structure database...');
 
     try {
         // Get user ID for multi-user support
-        const userId = userSession.getUserId();
+        const userId = window.currentUser ? window.currentUser.id : null;
 
         // Fetch all structures directly from the Supabase-backed API
         const response = await fetch(`/api/structures?userId=${userId}`);

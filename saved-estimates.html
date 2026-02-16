@@ -6,16 +6,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Saved Estimates - EstiGen</title>
     <link rel="stylesheet" href="styles.css">
-
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+    <script>
+        // Check authentication immediately to prevent flashing of private content
+        (async function () {
+            const user = await checkAuth('user-login.html');
+            if (user) {
+                document.documentElement.classList.add('auth-verified');
+                window.currentUser = user;
+            }
+        })();
+    </script>
+    <style>
+        /* Hide content until auth is verified */
+        html:not(.auth-verified) body {
+            display: none;
+        }
+    </style>
 </head>
 
 <body>
     <div class="container">
         <div class="header">
-            <h1>Saved Estimates</h1>
-            <div>
-                <a href="index.html">← Back to Generator</a>
+            <div class="header-brand">
+                <img src="logo.jpg" alt="EstiGen Logo" class="header-logo">
+            </div>
 
+            <div class="user-status">
+                <div class="header-nav" style="margin-right: 15px;">
+                    <a href="index.html">← Back to Generator</a>
+                </div>
+
+                <div class="user-profile" id="user-profile-trigger" onclick="toggleUserDropdown()">
+                    <div class="user-avatar" id="user-initials">U</div>
+                    <div class="profile-info">
+                        <span class="profile-name" id="user-name">User</span>
+                        <span class="profile-email" id="user-email">user@example.com</span>
+                    </div>
+                </div>
+
+                <div class="user-dropdown" id="user-dropdown">
+                    <a href="index.html" class="dropdown-item">📊 New Estimate</a>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item" onclick="logout()" style="color: var(--error-color);">🚪 Logout</div>
+                </div>
             </div>
         </div>
 

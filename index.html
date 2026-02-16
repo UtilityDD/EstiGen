@@ -8,6 +8,24 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="edit-modal.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+    <script>
+        // Check authentication immediately to prevent flashing of private content
+        (async function () {
+            const user = await checkAuth();
+            if (user) {
+                document.documentElement.classList.add('auth-verified');
+                window.currentUser = user;
+            }
+        })();
+    </script>
+    <style>
+        /* Hide content until auth is verified */
+        html:not(.auth-verified) body {
+            display: none;
+        }
+    </style>
 </head>
 
 <body>
@@ -17,10 +35,27 @@
             <div class="header-brand">
                 <img src="logo.jpg" alt="EstiGen Logo" class="header-logo">
             </div>
-            <div class="header-nav">
-                <a href="user-guide.html" target="_blank">📖 User Guide</a>
-                <a href="saved-estimates.html">📂 Saved Estimates</a>
-                <a href="admin.html" target="_blank">Admin Panel</a>
+
+            <div class="user-status">
+                <div class="header-nav" style="margin-right: 15px;">
+                    <a href="user-guide.html" target="_blank">📖 Guide</a>
+                    <a href="saved-estimates.html">📂 Estimates</a>
+                </div>
+
+                <div class="user-profile" id="user-profile-trigger" onclick="toggleUserDropdown()">
+                    <div class="user-avatar" id="user-initials">U</div>
+                    <div class="profile-info">
+                        <span class="profile-name" id="user-name">User</span>
+                        <span class="profile-email" id="user-email">user@example.com</span>
+                    </div>
+                </div>
+
+                <div class="user-dropdown" id="user-dropdown">
+                    <a href="saved-estimates.html" class="dropdown-item">📂 My Estimates</a>
+                    <a href="admin.html" id="admin-dropdown-link" class="dropdown-item hidden">🛠️ Admin Panel</a>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item" onclick="logout()" style="color: var(--error-color);">🚪 Logout</div>
+                </div>
             </div>
         </div>
 
@@ -219,13 +254,15 @@
                 <h2 id="edit-modal-title"><span>✏️</span> Edit Structure</h2>
                 <button class="modal-close" onclick="closeEditModal()">×</button>
             </div>
-            <p id="edit-modal-desc" style="padding: 1rem 2rem 0; color: #64748b; font-size: 0.9rem; margin-bottom: -1rem;"></p>
+            <p id="edit-modal-desc"
+                style="padding: 1rem 2rem 0; color: #64748b; font-size: 0.9rem; margin-bottom: -1rem;"></p>
             <div class="modal-body" id="edit-modal-body">
                 <!-- Structure form will be dynamically inserted here -->
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
-                <button class="btn btn-primary" id="save-structure-btn" onclick="saveStructureEdits()">Save Changes</button>
+                <button class="btn btn-primary" id="save-structure-btn" onclick="saveStructureEdits()">Save
+                    Changes</button>
             </div>
         </div>
     </div>
@@ -240,7 +277,6 @@
     </div>
 
     <script src="loading-utils.js"></script>
-    <script src="user-session.js"></script>
     <script src="script.js"></script>
     <script src="save-estimate.js"></script>
 

@@ -49,6 +49,7 @@ module.exports = (supabase) => {
         async (req, res) => {
             try {
                 const { estimateData, calculatedResults } = req.body;
+                const userId = req.headers['x-user-id'] || req.query.userId || null;
 
                 if (!estimateData || !calculatedResults) {
                     return res.status(400).json({ error: 'Missing required data' });
@@ -57,6 +58,7 @@ module.exports = (supabase) => {
                 const { data, error } = await supabase
                     .from('estimates')
                     .insert([{
+                        user_id: userId,
                         estimate_id: estimateData.estimate_id,
                         work_name: estimateData.work_name,
                         work_category: estimateData.work_category,
@@ -98,11 +100,16 @@ module.exports = (supabase) => {
     // Get list of estimates with optional filtering
     router.get('/', async (req, res) => {
         try {
-            const { limit = 50, offset = 0, category } = req.query;
+            const { limit = 50, offset = 0, category, userId } = req.query;
+
+            if (!userId) {
+                return res.status(400).json({ error: 'userId is required' });
+            }
 
             let query = supabase
                 .from('estimates')
                 .select('id, estimate_id, work_name, work_category, grand_total, created_at', { count: 'exact' })
+                .eq('user_id', userId)
                 .order('created_at', { ascending: false })
                 .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
 

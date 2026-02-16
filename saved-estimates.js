@@ -2,10 +2,39 @@
 let allEstimates = [];
 
 // Load estimates on page load
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Auth Guard
+    const user = await checkAuth('user-login.html');
+    if (!user) return;
+
+    window.currentUser = user;
+
+    // 2. Initialize User UI
+    if (window.currentUser) {
+        const user = window.currentUser;
+        document.getElementById('user-name').textContent = user.user_metadata?.full_name || user.email.split('@')[0];
+        document.getElementById('user-email').textContent = user.email;
+        document.getElementById('user-initials').textContent = (user.user_metadata?.full_name || user.email)[0].toUpperCase();
+    }
+
+    // 3. Add dropdown click handler
+    document.addEventListener('click', (e) => {
+        const dropdown = document.getElementById('user-dropdown');
+        const trigger = document.getElementById('user-profile-trigger');
+        if (dropdown && trigger && !trigger.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.remove('active');
+        }
+    });
+
     loadEstimates();
     setupSearch();
 });
+
+// UI Helper functions
+function toggleUserDropdown() {
+    const dropdown = document.getElementById('user-dropdown');
+    if (dropdown) dropdown.classList.toggle('active');
+}
 
 // Fetch estimates from API
 async function loadEstimates() {
@@ -15,7 +44,8 @@ async function loadEstimates() {
     }, 200); // Only show loader if request takes > 200ms
 
     try {
-        const response = await fetch('/api/estimates');
+        const userId = window.currentUser ? window.currentUser.id : '';
+        const response = await fetch(`/api/estimates?userId=${userId}`);
         if (!response.ok) throw new Error('Failed to fetch estimates');
 
         allEstimates = await response.json();

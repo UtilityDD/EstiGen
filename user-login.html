@@ -153,14 +153,14 @@
     <script>
         // Check if already logged in
         document.addEventListener('DOMContentLoaded', async () => {
-            const user = await auth.getCurrentUser();
+            const user = await getCurrentUser();
             if (user) {
-                if (user.role === 'admin') {
-                    // Start redirecting to admin, but maybe warn them? 
-                    // Actually, if they are admin, let them go to admin panel.
+                // If it's an admin, they can go to either, but let's send them to admin default
+                // For users, always send to index
+                const isAdmin = user.email.includes('admin'); // Simple check or use metadata if available
+                if (isAdmin) {
                     window.location.href = 'admin.html';
                 } else {
-                    // Already logged in as user, go to app
                     window.location.href = 'index.html';
                 }
             }
@@ -179,9 +179,8 @@
             btn.disabled = true;
 
             try {
-                // loginUser is defined in auth.js
-                await auth.loginUser(email, password);
-                // Redirect after successful login
+                await loginUser(email, password);
+                // Successful user login goes to index
                 window.location.href = 'index.html';
             } catch (error) {
                 console.error(error);

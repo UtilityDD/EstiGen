@@ -24,10 +24,15 @@ async function initSupabase() {
     }
 }
 
-// Login function
-async function login(email, password) {
+/**
+ * Core login function
+ * @param {string} email 
+ * @param {string} password 
+ * @returns {Promise<Object>} The authenticated user data
+ */
+async function loginUser(email, password) {
     const client = await initSupabase();
-    if (!client) throw new Error('Auth system not initialized');
+    if (!client) throw new Error('Authentication system is currently unavailable.');
 
     const { data, error } = await client.auth.signInWithPassword({
         email: email,
@@ -35,9 +40,16 @@ async function login(email, password) {
     });
 
     if (error) throw error;
+    return data;
+}
 
-    // Successful login - redirect
-    window.location.href = 'admin.html';
+// Legacy alias for admin login (to be safe)
+async function login(email, password) {
+    const data = await loginUser(email, password);
+    // Admins usually redirect to admin.html
+    if (data.user) {
+        window.location.href = 'admin.html';
+    }
     return data;
 }
 
@@ -47,10 +59,11 @@ async function logout() {
     if (!client) return;
 
     await client.auth.signOut();
-    window.location.href = 'login.html';
+    // Redirect to the surveyor login by default as it's the main entry point
+    window.location.href = 'user-login.html';
 }
 
-// Get current user (session check)
+// Get current session/user
 async function getCurrentUser() {
     const client = await initSupabase();
     if (!client) return null;
@@ -61,13 +74,22 @@ async function getCurrentUser() {
     return session.user;
 }
 
-// Protect Page Guard
-async function checkAuth() {
+// Protect Page Guard - redirects to login if not authenticated
+async function checkAuth(customRedirect = 'user-login.html') {
     const user = await getCurrentUser();
     if (!user) {
-        // Not authenticated, redirect to login
-        window.location.href = 'login.html';
+        window.location.href = customRedirect;
         return null;
     }
     return user;
 }
+
+// Export as a global object as well for convenience
+window.auth = {
+    loginUser,
+    login,
+    logout,
+    getCurrentUser,
+    checkAuth,
+    initSupabase
+};

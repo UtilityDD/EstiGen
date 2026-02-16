@@ -48,7 +48,10 @@ async function saveEstimate() {
         // Send to API
         const response = await fetch('/api/estimates', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'x-user-id': window.currentUser ? window.currentUser.id : ''
+            },
             body: JSON.stringify(payload)
         });
 
