@@ -970,3 +970,17 @@ body {
     background: #f8d7da;
     color: #721c24;
 }
+
+.badge-admin {
+    background: #E0F2FE;
+    color: #0369A1;
+}
+
+.badge-surveyor {
+    background: #F0FDF4;
+    color: #166534;
+}
+
+.hidden {
+    display: none !important;
+}

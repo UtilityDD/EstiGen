@@ -285,7 +285,7 @@
 /* View Mode Refinement */
 .view-mode .btn-add-row,
 .view-mode .remove-row-btn,
-.view-mode .modal-footer #save-structure-btn {
+.view-mode .modal-footer #save-record-btn {
     display: none !important;
 }
 

@@ -608,6 +608,51 @@ app.delete('/api/admin/labour/:id', strictLimiter, async (req, res) => {
     }
 });
 
+// --- User Profile Management ---
+
+// Get all profiles (Admin only)
+app.get('/api/admin/profiles', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .order('email', { ascending: true });
+
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        console.error('Error fetching profiles:', error);
+        res.status(500).json({ message: 'Error fetching profiles', details: error.message });
+    }
+});
+
+// Update a profile (Admin only)
+app.put('/api/admin/profiles/:id', strictLimiter, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updatedData = req.body;
+
+        // Extract only the fields we want to allow updating
+        const { role, must_change_password } = updatedData;
+        const updateObj = {};
+        if (role) updateObj.role = role;
+        if (typeof must_change_password === 'boolean') updateObj.must_change_password = must_change_password;
+
+        const { data, error } = await supabase
+            .from('profiles')
+            .update(updateObj)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json({ message: 'Profile updated successfully', data });
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        res.status(500).json({ message: 'Error updating profile', details: error.message });
+    }
+});
+
 // --- STATIC FILES ---
 // Serve static files after all API routes
 app.use(express.static(path.join(__dirname, '..')));

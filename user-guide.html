@@ -159,6 +159,7 @@
             <h2>🚀 Quick Start</h2>
             <p>Generate your first estimate in under 2 minutes:</p>
             <ol class="step-list">
+                <li><strong>Log In</strong> - Use your assigned surveyor or admin credentials.</li>
                 <li><strong>Select Work Category</strong> - Choose between New Network, Repair & Maintenance, or
                     Shifting</li>
                 <li><strong>Choose Voltage Level</strong> - Select 33 kV, 11 kV, DTR, LT 3-Ph, LT 1-Ph, or Special
@@ -166,291 +167,104 @@
                 <li><strong>Enter Quantities</strong> - Input the number of poles, structures, and equipment needed</li>
                 <li><strong>Add Project Details</strong> - Name your project and add prepared/surveyed by information
                 </li>
-                <li><strong>Configure Additional Costs</strong> - Set GST, contingency, supervision, and cess
-                    percentages</li>
-                <li><strong>Generate!</strong> - Click "Generate Estimate" to create your detailed cost breakdown</li>
+                <li><strong>Generate & Save</strong> - Click "Generate Estimate" to view results and save to your
+                    personal dashboard.</li>
             </ol>
         </div>
 
-        <!-- Step-by-Step Guide -->
+        <!-- Authentication & Security -->
         <div class="guide-section">
-            <h2>📋 Detailed Step-by-Step Guide</h2>
+            <h2>🔐 Authentication & Security</h2>
+            <p>EstiGen uses a secure multi-user system to protect data and provide personalized experiences.</p>
 
-            <h3>Step 1: Select Work Category</h3>
-            <p>Choose the type of electrical work you're estimating:</p>
-            <ul>
-                <li><strong>New Network</strong> - For brand new electrical line installations</li>
-                <li><strong>Repair & Maintenance</strong> - For fixing or maintaining existing infrastructure</li>
-                <li><strong>Shifting of Network</strong> - For relocating existing electrical lines</li>
-            </ul>
-            <div class="tip-box">
-                💡 <strong>Tip:</strong> The work category helps categorize your estimate for future reference and
-                reporting.
-            </div>
-
-            <h3>Step 2: Select Voltage / Asset Type</h3>
-            <p>Choose one or more voltage levels for your project:</p>
-            <ul>
-                <li><strong>33 kV</strong> - High voltage distribution lines</li>
-                <li><strong>11 kV</strong> - Medium voltage distribution lines</li>
-                <li><strong>DTR</strong> - Distribution Transformer installations</li>
-                <li><strong>LT 3-Ph</strong> - Low Tension 3-Phase lines</li>
-                <li><strong>LT 1-Ph</strong> - Low Tension 1-Phase lines</li>
-                <li><strong>Special Structure</strong> - Custom or specialized structures</li>
-            </ul>
-            <div class="tip-box">
-                💡 <strong>Tip:</strong> You can select multiple voltage levels if your project spans different types.
-                Click each card to select/deselect.
-            </div>
-
-            <h3>Step 3: Enter Structure Quantities</h3>
-            <p>For each voltage level selected, you'll see available structures organized by type:</p>
-            <ul>
-                <li><strong>Poles</strong> - Support structures (PSC, RCC, steel, wood)</li>
-                <li><strong>Stay Sets</strong> - Support systems for stability</li>
-                <li><strong>Conductors</strong> - Wires and cables (specify type and length)</li>
-                <li><strong>Hardware</strong> - Clamps, connectors, insulators</li>
-                <li><strong>Transformers</strong> - Power transformation equipment</li>
-            </ul>
-            <div class="tip-box">
-                💡 <strong>Tip:</strong> Each structure shows its description. Enter only the quantities you need -
-                leave others at 0.
-            </div>
-            <div class="warning-box">
-                ⚠️ <strong>Note:</strong> Make sure quantities are accurate. Use your survey data or technical
-                specifications.
-            </div>
-
-            <h3>Step 4: Name Your Project</h3>
-            <p>Add important project metadata:</p>
-            <ul>
-                <li><strong>Work Name</strong> - Descriptive name (e.g., "33 kV Line Extension at Village XYZ")</li>
-                <li><strong>Estimated Prepared By</strong> - Your name or department</li>
-                <li><strong>Survey Done By</strong> - Name or team who conducted the survey</li>
-            </ul>
-            <div class="tip-box">
-                💡 <strong>Tip:</strong> Use clear, descriptive names. This helps when searching through saved estimates
-                later.
-            </div>
-
-            <h3>Step 5: Configure Additional Costs</h3>
-            <p>Set percentage-based additional costs:</p>
-            <ul>
-                <li><strong>GST</strong> - Goods and Services Tax (default: 18%)
-                    <ul>
-                        <li>Apply to: Material + Labour, Material Only, or Labour Only</li>
-                    </ul>
-                </li>
-                <li><strong>Contingency</strong> - Buffer for unexpected costs (default: 3%)</li>
-                <li><strong>Supervision Cost</strong> - Project supervision charges (default: 5%)</li>
-                <li><strong>Cess</strong> - Additional tax/levy (default: 1%)</li>
-            </ul>
-            <div class="tip-box">
-                💡 <strong>Tip:</strong> You can adjust these percentages based on project requirements or local
-                regulations.
-            </div>
-
-            <h3>Step 6: Generate Estimate</h3>
-            <p>Click "Generate Estimate" to create a detailed cost breakdown showing:</p>
-            <ul>
-                <li>Material costs with quantities and rates</li>
-                <li>Labour costs with quantities and rates</li>
-                <li>Subtotals for materials and labour</li>
-                <li>All additional costs calculated</li>
-                <li>Grand total in numbers and words</li>
-            </ul>
-        </div>
-
-        <!-- Features -->
-        <div class="guide-section">
-            <h2>✨ Key Features</h2>
+            <h3>User Roles</h3>
             <div class="feature-grid">
                 <div class="feature-card">
-                    <h4>💾 Save Estimates</h4>
-                    <p>Save your generated estimates to the database for future reference and retrieval.</p>
+                    <h4>👷 Surveyor</h4>
+                    <p>Standard access to generate, save, view, and download estimates. Cannot modify master data or
+                        user accounts.</p>
                 </div>
                 <div class="feature-card">
-                    <h4>📂 View Saved</h4>
-                    <p>Browse all your saved estimates, search by name or category, and reload them anytime.</p>
-                </div>
-                <div class="feature-card">
-                    <h4>📥 Download PDF</h4>
-                    <p>Export your estimate as a professional PDF document ready for printing or sharing.</p>
-                </div>
-                <div class="feature-card">
-                    <h4>✏️ Edit & Regenerate</h4>
-                    <p>Go back and modify quantities or costs, then regenerate the estimate instantly.</p>
-                </div>
-                <div class="feature-card">
-                    <h4>🔍 Detailed Breakdown</h4>
-                    <p>See complete itemized lists of materials and labour with codes, descriptions, and rates.</p>
-                </div>
-                <div class="feature-card">
-                    <h4>📊 Multiple Formats</h4>
-                    <p>View estimates on screen or generate print-optimized versions.</p>
+                    <h4>🛠️ Administrator</h4>
+                    <p>Full access including the <strong>Admin Panel</strong>. Can manage material rates, structures,
+                        and user roles.</p>
                 </div>
             </div>
+
+            <h3>Security Policies</h3>
+            <ul>
+                <li><strong>Session Security:</strong> You stay logged in for the duration of your work. Always logout
+                    when using shared devices.</li>
+                <li><strong>Forced Password Reset:</strong> Administrators can flag accounts for a mandatory password
+                    change. If requested, you must update your password before accessing the generator.</li>
+                <li><strong>Audit Trail:</strong> Every estimate saved is tagged with your user ID for accountability.
+                </li>
+            </ul>
         </div>
 
         <!-- Working with Estimates -->
         <div class="guide-section">
             <h2>💼 Working with Estimates</h2>
 
+            <h3>My Estimates Dashboard</h3>
+            <p>Your estimates are private to your account. You can access them anytime via the 👤 <strong>User Profile
+                    Dropdown</strong> in the top-right corner.</p>
+            <ol class="step-list">
+                <li>Click your profile name/avatar in the header.</li>
+                <li>Select 📂 <strong>My Estimates</strong>.</li>
+                <li>Filter, search, or delete your previous work from this secure dashboard.</li>
+            </ol>
+
             <h3>Saving an Estimate</h3>
             <ol class="step-list">
                 <li>After generating an estimate, click the <code>💾 Save</code> button</li>
-                <li>The estimate is saved to the database with a unique ID</li>
-                <li>You'll see a confirmation message with the estimate ID</li>
-            </ol>
-
-            <h3>Viewing Saved Estimates</h3>
-            <ol class="step-list">
-                <li>Click <code>📂 Saved Estimates</code> in the header</li>
-                <li>Browse the list of all saved estimates</li>
-                <li>Use the search box to filter by ID, name, or category</li>
-                <li>Click the 👁️ (eye) icon to view/load an estimate</li>
-                <li>Click the 🗑️ (trash) icon to delete an estimate</li>
+                <li>The estimate is saved to your personal profile.</li>
+                <li>You can reload these estimates later to make adjustments without starting over.</li>
             </ol>
 
             <h3>Downloading as PDF</h3>
-            <ol class="step-list">
-                <li>After generating an estimate, click <code>📥 Download</code></li>
-                <li>A PDF file will be created and downloaded to your computer</li>
-                <li>The PDF includes all details: materials, labour, costs, and totals</li>
-                <li>Perfect for printing, emailing, or archiving</li>
-            </ol>
+            <p>PDF reports are generated locally for immediate download. They contain full breakdowns with materials,
+                labour, and tax calculations.</p>
+        </div>
 
-            <h3>Editing an Estimate</h3>
-            <ol class="step-list">
-                <li>After generating, click the <code>Edit</code> button</li>
-                <li>You'll return to Step 5 (Additional Costs)</li>
-                <li>Modify percentages or go back to change quantities</li>
-                <li>Click "Generate Estimate" again to update</li>
-            </ol>
+        <!-- Admin Panel -->
+        <div class="guide-section">
+            <h2>⚙️ Admin Panel (For Administrators)</h2>
+            <p>The Admin Panel is the "Brain" of EstiGen. Accessible only to Administrators via the profile menu.</p>
+
+            <h3>Core Management Areas</h3>
+            <ul>
+                <li><strong>Structures:</strong> Update the composition of standard structures (e.g., adding more bolts
+                    to a 33kV Pole).</li>
+                <li><strong>Materials:</strong> Real-time updates to material codes and market rates (₹).</li>
+                <li><strong>Labour:</strong> Manage labour activity codes and hourly/unit rates.</li>
+                <li><strong>👤 User Management:</strong> Promote surveyors to administrators, or force password resets
+                    for security compliance.</li>
+            </ul>
+
+            <div class="tip-box">
+                💡 <strong>Tip for Admins:</strong> Changes made in the Admin Panel reflect <strong>instantly</strong>
+                for all users. Use caution when updating rates.
+            </div>
         </div>
 
         <!-- Tips & Best Practices -->
         <div class="guide-section">
             <h2>💡 Tips & Best Practices</h2>
 
-            <h3>For Accurate Estimates</h3>
-            <ul>
-                <li>✅ Conduct thorough site surveys before estimation</li>
-                <li>✅ Double-check all quantities from technical specifications</li>
-                <li>✅ Use appropriate structure types for the terrain and load</li>
-                <li>✅ Account for special conditions (crossing, river, etc.)</li>
-                <li>✅ Review material and labour rates periodically</li>
-            </ul>
-
             <h3>For Better Organization</h3>
             <ul>
-                <li>✅ Use descriptive project names (include location, voltage, date)</li>
-                <li>✅ Save estimates regularly as you work on them</li>
-                <li>✅ Maintain consistent naming conventions</li>
-                <li>✅ Delete old or incorrect estimates to keep database clean</li>
+                <li>✅ <strong>Naming:</strong> Use clear work names like <em>"Burdwan Division - 33kV Line Shifting -
+                        Feb 2024"</em>.</li>
+                <li>✅ <strong>Profile Management:</strong> Keep your password secure and update it periodically.</li>
+                <li>✅ <strong>Review:</strong> Always review the GST and Contingency percentages before finalizing.</li>
             </ul>
-
-            <h3>For Efficiency</h3>
-            <ul>
-                <li>✅ Load similar past estimates as templates</li>
-                <li>✅ Keep standard percentages (GST, contingency) saved as defaults</li>
-                <li>✅ Use the search function in Saved Estimates for quick access</li>
-                <li>✅ Download PDFs even if saving to database (backup)</li>
-            </ul>
-
-            <div class="warning-box">
-                ⚠️ <strong>Rate Limiting:</strong> You can generate a maximum of <strong>1 estimate per minute</strong>
-                to protect server resources. If you need to generate multiple estimates, please wait 60 seconds between
-                each generation.
-            </div>
-        </div>
-
-        <!-- Troubleshooting -->
-        <div class="guide-section">
-            <h2>🔧 Troubleshooting</h2>
-
-            <h3>Common Issues & Solutions</h3>
-
-            <h4>Problem: "No structures showing in Step 3"</h4>
-            <p><strong>Solution:</strong> Make sure you've selected at least one voltage level in Step 2. Go back and
-                click on a voltage card.</p>
-
-            <h4>Problem: "Estimate won't generate"</h4>
-            <p><strong>Solution:</strong> Check that you've:</p>
-            <ul>
-                <li>Selected a work category (Step 1)</li>
-                <li>Selected at least one voltage level (Step 2)</li>
-                <li>Entered at least one quantity > 0 (Step 3)</li>
-                <li>Filled in all required fields in Step 4</li>
-            </ul>
-
-            <h4>Problem: "Rate limit exceeded"</h4>
-            <p><strong>Solution:</strong> You've generated an estimate in the last 60 seconds. Wait 1 minute before
-                generating another estimate. This limit protects server resources.</p>
-
-            <h4>Problem: "PDF download not working"</h4>
-            <p><strong>Solution:</strong> Check your browser's download settings and popup blocker. Allow downloads from
-                this site.</p>
-
-            <h4>Problem: "Can't find my saved estimate"</h4>
-            <p><strong>Solution:</strong> Use the search box in Saved Estimates page. Try searching by:</p>
-            <ul>
-                <li>Estimate ID</li>
-                <li>Part of the work name</li>
-                <li>Work category (New Network, Repair & Maintenance, etc.)</li>
-            </ul>
-
-            <h4>Problem: "Numbers don't add up correctly"</h4>
-            <p><strong>Solution:</strong> Verify:</p>
-            <ul>
-                <li>Material and labour rates are current (check Admin Panel)</li>
-                <li>Additional cost percentages are correct</li>
-                <li>The "Apply To" setting for each cost type is appropriate</li>
-            </ul>
-        </div>
-
-        <!-- Admin Panel (Brief) -->
-        <div class="guide-section">
-            <h2>⚙️ Admin Panel (For Administrators)</h2>
-            <p>The Admin Panel allows authorized users to:</p>
-            <ul>
-                <li>View and edit structure definitions</li>
-                <li>Update material rates and codes</li>
-                <li>Update labour rates and codes</li>
-                <li>Add new materials or labour items</li>
-                <li>Modify structure compositions</li>
-            </ul>
-            <div class="warning-box">
-                ⚠️ <strong>Access Restricted:</strong> Admin Panel requires authentication. Contact your system
-                administrator for access.
-            </div>
-        </div>
-
-        <!-- Contact/Support -->
-        <div class="guide-section">
-            <h2>❓ Need Help?</h2>
-            <p>If you encounter issues not covered in this guide:</p>
-            <ul>
-                <li>Check the browser console for error messages (Press F12)</li>
-                <li>Verify your internet connection is stable</li>
-                <li>Try refreshing the page</li>
-                <li>Contact your system administrator or IT support</li>
-            </ul>
-
-            <div class="tip-box">
-                💡 <strong>Quick Keyboard Shortcuts:</strong>
-                <ul style="margin-top: 0.5rem;">
-                    <li><kbd>F12</kbd> - Open browser developer tools</li>
-                    <li><kbd>Ctrl + P</kbd> - Print current page</li>
-                    <li><kbd>F5</kbd> or <kbd>Ctrl + R</kbd> - Refresh page</li>
-                </ul>
-            </div>
         </div>
 
         <!-- Footer -->
         <div style="text-align: center; padding: 2rem; color: #666; border-top: 1px solid #ddd; margin-top: 2rem;">
             <p><strong>EstiGen</strong> - Electrical Network Construction Estimator</p>
-            <p>Version 1.0 | Last Updated: December 2025</p>
+            <p>Version 2.0 | Multi-User Edition | Updated: Feb 2026</p>
             <a href="index.html" class="back-link">← Back to EstiGen</a>
         </div>
     </div>

@@ -82,6 +82,26 @@ const tableConfigs = {
             { key: 'Unit', label: 'Unit', type: 'text', required: true },
             { key: 'Rate (Rs)', label: 'Rate (Rs)', type: 'number', required: true, step: '0.01' }
         ]
+    },
+    profiles: {
+        title: 'Users',
+        apiEndpoint: '/api/admin/profiles',
+        columns: [
+            { key: 'email', label: 'Email', width: '35%', sortable: true },
+            { key: 'role', label: 'Role', width: '20%', render: (val) => `<span class="badge badge-${val}">${val.toUpperCase()}</span>` },
+            { key: 'must_change_password', label: 'Reset Required', width: '15%', render: (val) => val ? '🚩 Yes' : '✅ No' },
+            { key: 'created_at', label: 'Joined', width: '20%', render: (val) => new Date(val).toLocaleDateString() }
+        ],
+        formFields: [
+            { key: 'email', label: 'Email', type: 'text', readonly: true },
+            {
+                key: 'role', label: 'Role', type: 'select', options: [
+                    { value: 'surveyor', label: 'Surveyor' },
+                    { value: 'admin', label: 'Administrator' }
+                ]
+            },
+            { key: 'must_change_password', label: 'Force Password Change', type: 'checkbox' }
+        ]
     }
 };
 
@@ -158,13 +178,27 @@ async function loadTableData() {
     showLoading(true);
     try {
         const config = tableConfigs[currentTable];
-        const response = await fetch(config.apiEndpoint);
+        let data;
 
-        if (!response.ok) {
-            throw new Error(`Failed to fetch ${config.title}`);
+        // Custom handling for profiles to ensure we use the authenticated session
+        if (currentTable === 'profiles') {
+            const client = await initSupabase();
+            const { data: profileData, error } = await client
+                .from('profiles')
+                .select('*')
+                .order('email', { ascending: true });
+
+            if (error) throw error;
+            data = profileData;
+        } else {
+            const response = await fetch(config.apiEndpoint);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch ${config.title}`);
+            }
+            data = await response.json();
         }
 
-        allData = await response.json();
+        allData = data;
 
         // Handle paginated response from estimates API
         if (allData.estimates) {
@@ -382,23 +416,40 @@ function openModal(data = null) {
         const isSpecial = currentTable === 'special_structures';
         renderStructureEditor(modalBody, data, isSpecial);
     }
-    // Default rendering for other tables (Materials, Labour)
+    // Default rendering for other tables (Materials, Labour, Profiles)
     else {
         let formHtml = '<form id="record-form">';
         config.formFields.forEach(field => {
-            const value = data ? (data[field.key] || '') : '';
-            formHtml += `
-            <div class="form-field">
+            const value = data ? (data[field.key] ?? '') : '';
+            const readonlyAttr = field.readonly ? 'readonly' : '';
+            const disabledAttr = field.readonly ? 'disabled' : ''; // For select/checkbox
+
+            formHtml += `<div class="form-field" ${field.hidden ? 'style="display:none"' : ''}>
                 <label for="field-${field.key}">
                     ${field.label} ${field.required ? '<span style="color: red;">*</span>' : ''}
-                </label>
-                ${field.type === 'textarea'
-                    ? `<textarea id="field-${field.key}" name="${field.key}" ${field.required ? 'required' : ''}>${value}</textarea>`
-                    : `<input type="${field.type}" id="field-${field.key}" name="${field.key}" value="${value}" ${field.required ? 'required' : ''} ${field.step ? `step="${field.step}"` : ''}>`
-                }
-                ${field.hint ? `<small style="color: #666;">${field.hint}</small>` : ''}
-            </div>
-        `;
+                </label>`;
+
+            if (field.type === 'textarea') {
+                formHtml += `<textarea id="field-${field.key}" name="${field.key}" ${field.required ? 'required' : ''} ${readonlyAttr}>${value}</textarea>`;
+            } else if (field.type === 'select') {
+                formHtml += `<select id="field-${field.key}" name="${field.key}" ${field.required ? 'required' : ''} ${disabledAttr}>`;
+                field.options.forEach(opt => {
+                    formHtml += `<option value="${opt.value}" ${value === opt.value ? 'selected' : ''}>${opt.label}</option>`;
+                });
+                formHtml += `</select>`;
+            } else if (field.type === 'checkbox') {
+                formHtml += `<div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+                    <input type="checkbox" id="field-${field.key}" name="${field.key}" ${value ? 'checked' : ''} ${disabledAttr} style="width: auto; margin: 0;">
+                    <span style="font-size: 0.9rem; color: #666;">Apply this setting</span>
+                </div>`;
+            } else {
+                formHtml += `<input type="${field.type}" id="field-${field.key}" name="${field.key}" value="${value}" ${field.required ? 'required' : ''} ${field.step ? `step="${field.step}"` : ''} ${readonlyAttr}>`;
+            }
+
+            if (field.hint) {
+                formHtml += `<small style="display: block; color: #666; margin-top: 0.25rem;">${field.hint}</small>`;
+            }
+            formHtml += `</div>`;
         });
         formHtml += '</form>';
         modalBody.innerHTML = formHtml;
@@ -484,7 +535,7 @@ function renderStructureEditor(container, data, isSpecial) {
             </h3>
             <div id="admin-materials-container">
                 <table class="edit-table" id="admin-mat-table">
-                    <thead><tr><th>Material Item</th><th style="width: 100px;">Qty</th><th style="width: 50px;"></th></tr></thead>
+                    <thead><tr><th style="width: 150px;">Code</th><th>Material Item</th><th style="width: 100px;">Qty</th><th style="width: 50px;"></th></tr></thead>
                     <tbody></tbody>
                 </table>
                 <button type="button" class="btn-add-row" onclick="addMaterialRow()">
@@ -492,7 +543,7 @@ function renderStructureEditor(container, data, isSpecial) {
                 </button>
             </div>
             <datalist id="admin-material-list">
-                 ${masterMaterials.map(m => `<option value="${m.Description} [Currently: ${m.mat_sl}]" data-id="${m.mat_sl}">Code: ${m['Material Code']}</option>`).join('')}
+                 ${masterMaterials.map(m => `<option value="${m.Description}" data-id="${m.mat_sl}">Code: ${m['Materials Code']}</option>`).join('')}
             </datalist>
         </div>
 
@@ -503,7 +554,7 @@ function renderStructureEditor(container, data, isSpecial) {
             </h3>
             <div id="admin-labour-container">
                 <table class="edit-table" id="admin-lab-table">
-                    <thead><tr><th>Labour Activity</th><th style="width: 100px;">Qty</th><th style="width: 50px;"></th></tr></thead>
+                    <thead><tr><th style="width: 150px;">Code</th><th>Labour Activity</th><th style="width: 100px;">Qty</th><th style="width: 50px;"></th></tr></thead>
                     <tbody></tbody>
                 </table>
                 <button type="button" class="btn-add-row" onclick="addLabourRow()">
@@ -511,7 +562,7 @@ function renderStructureEditor(container, data, isSpecial) {
                 </button>
             </div>
             <datalist id="admin-labour-list">
-                ${masterLabour.map(l => `<option value="${l.Description} [Currently: ${l.lab_sl}]" data-id="${l.lab_sl}">Code: ${l['Labour Code']}</option>`).join('')}
+                ${masterLabour.map(l => `<option value="${l.Description}" data-id="${l.lab_sl}">Code: ${l['Labour Code']}</option>`).join('')}
             </datalist>
         </div>
     </form>
@@ -528,15 +579,13 @@ function addMaterialRow(item = null) {
     const tbody = document.querySelector('#admin-mat-table tbody');
     const tr = document.createElement('tr');
 
-    let inputValue = '';
-    let qty = item ? (item.qty || 0) : 1;
-    let idx = item ? (item.index || item.id) : ''; // handle both index or id keys
-
+    let code = '';
     let step = "0.01";
     if (idx) {
         const found = masterMaterials.find(m => m.mat_sl == idx);
         if (found) {
-            inputValue = `${found.Description} [Currently: ${found.mat_sl}]`;
+            inputValue = found.Description;
+            code = found['Materials Code'] || found['Material Code'] || '';
             if (found.Unit && found.Unit.toUpperCase() === 'NOS') step = "1";
         } else {
             inputValue = `Item ${idx}`;
@@ -544,28 +593,34 @@ function addMaterialRow(item = null) {
     }
 
     tr.innerHTML = `
+        <td style="width: 150px;"><input type="text" class="mat-code-input" value="${code}" readonly style="width:100%; background: #f5f5f5; color: #666; font-family: monospace; font-size: 0.85rem;"></td>
         <td><input type="text" class="mat-search-input" list="admin-material-list" value="${inputValue}" placeholder="Search materials..." style="width:100%"></td>
         <td style="width: 100px;"><input type="number" step="${step}" class="mat-qty-input" value="${qty}" style="text-align: right;"></td>
         <td style="width: 50px;"><button type="button" class="remove-row-btn" onclick="this.closest('tr').remove()" title="Remove row">🗑️</button></td>
     `;
     tbody.appendChild(tr);
 
-    // Dynamic step adjustment based on Unit
+    // Dynamic updates
     const searchInput = tr.querySelector('.mat-search-input');
     const qtyInput = tr.querySelector('.mat-qty-input');
+    const codeInput = tr.querySelector('.mat-code-input');
 
     searchInput.addEventListener('input', () => {
         const val = searchInput.value;
         const id = extractIdFromInput(val, masterMaterials, 'mat_sl');
         if (id) {
             const found = masterMaterials.find(m => m.mat_sl == id);
-            if (found && found.Unit && found.Unit.toUpperCase() === 'NOS') {
-                qtyInput.step = "1";
-                // Optionally round existing value
-                if (qtyInput.value % 1 !== 0) qtyInput.value = Math.round(qtyInput.value);
-            } else {
-                qtyInput.step = "0.01";
+            if (found) {
+                codeInput.value = found['Materials Code'] || found['Material Code'] || '';
+                if (found.Unit && found.Unit.toUpperCase() === 'NOS') {
+                    qtyInput.step = "1";
+                    if (qtyInput.value % 1 !== 0) qtyInput.value = Math.round(qtyInput.value);
+                } else {
+                    qtyInput.step = "0.01";
+                }
             }
+        } else {
+            codeInput.value = '';
         }
     });
 }
@@ -582,7 +637,7 @@ function addLabourRow(item = null) {
     if (idx) {
         const found = masterLabour.find(l => l.lab_sl == idx);
         if (found) {
-            inputValue = `${found.Description} [Currently: ${found.lab_sl}]`;
+            inputValue = found.Description;
             if (found.Unit && found.Unit.toUpperCase() === 'NOS') step = "1";
         } else {
             inputValue = `Item ${idx}`;
@@ -639,12 +694,21 @@ async function saveRecord() {
         return;
     }
 
-    const formData = new FormData(form);
     const data = {};
 
-    for (let [key, value] of formData.entries()) {
-        data[key] = value;
-    }
+    // Use config to ensure all fields are captured, including unchecked checkboxes
+    config.formFields.forEach(field => {
+        const input = form.querySelector(`[name="${field.key}"]`);
+        if (!input) return;
+
+        if (field.type === 'checkbox') {
+            data[field.key] = input.checked;
+        } else if (field.type === 'number') {
+            data[field.key] = input.value === '' ? null : parseFloat(input.value);
+        } else {
+            data[field.key] = input.value;
+        }
+    });
 
     // Handle Structure Editing (New UI)
     if (currentTable === 'structures' || currentTable === 'special_structures') {
@@ -686,30 +750,44 @@ async function saveRecord() {
     const loadingToast = showNotification('Saving changes...', 'loading');
 
     try {
-        let endpoint = config.apiEndpoint;
-        let method = 'POST';
-        let body = null;
+        let response;
+        const editId = document.getElementById('edit-modal').dataset.editId;
 
-        if (currentTable === 'structures' || currentTable === 'special_structures') {
-            endpoint = '/api/structures/update';
-            // server expects array
-            body = JSON.stringify([data]);
+        // Custom handling for profiles to ensure we use session permissions
+        if (currentTable === 'profiles') {
+            const client = await initSupabase();
+            const { data: updatedProfile, error } = await client
+                .from('profiles')
+                .update(data)
+                .eq('id', editId)
+                .select()
+                .single();
+
+            if (error) throw error;
+            // Mock a response object for the existing logic flow
+            response = { ok: true };
         } else {
-            // Materials/Labour updates
-            if (document.getElementById('edit-modal').dataset.editId) {
-                // Edit existing
-                const id = document.getElementById('edit-modal').dataset.editId;
-                method = 'PUT';
-                endpoint = `${config.apiEndpoint}/${id}`;
-            }
-            body = JSON.stringify(data);
-        }
+            let endpoint = config.apiEndpoint;
+            let method = 'POST';
+            let body = null;
 
-        const response = await fetch(endpoint, {
-            method: method,
-            headers: { 'Content-Type': 'application/json' },
-            body: body
-        });
+            if (currentTable === 'structures' || currentTable === 'special_structures') {
+                endpoint = '/api/structures/update';
+                body = JSON.stringify([data]);
+            } else {
+                if (editId) {
+                    method = 'PUT';
+                    endpoint = `${config.apiEndpoint}/${editId}`;
+                }
+                body = JSON.stringify(data);
+            }
+
+            response = await fetch(endpoint, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: body
+            });
+        }
 
         // Remove loading toast
         if (loadingToast) loadingToast.remove();

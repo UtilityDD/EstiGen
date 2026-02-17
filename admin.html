@@ -6,6 +6,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EstiGen Admin Panel - Database Management</title>
     <link rel="stylesheet" href="admin-styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+    <script>
+        // Secure the admin panel: check for auth and admin role
+        (async function () {
+            const user = await checkAuth('login.html');
+            if (user) {
+                const profile = await getUserProfile(user.id);
+                if (profile && profile.role === 'admin') {
+                    document.documentElement.classList.add('admin-verified');
+                    window.currentUser = user;
+                } else {
+                    // Not an admin, redirect to main app
+                    window.location.href = 'index.html';
+                }
+            }
+        })();
+    </script>
+    <style>
+        /* Hide content until admin is verified */
+        html:not(.admin-verified) body {
+            display: none;
+        }
+    </style>
 </head>
 
 <body>
@@ -34,6 +58,9 @@
             </button>
             <button class="tab-btn" data-table="labour">
                 👷 Labour
+            </button>
+            <button class="tab-btn" data-table="profiles">
+                👤 Users
             </button>
         </nav>
 
