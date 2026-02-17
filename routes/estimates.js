@@ -58,7 +58,7 @@ module.exports = (supabase) => {
                 const { data, error } = await supabase
                     .from('estimates')
                     .insert([{
-                        user_id: userId,
+                        created_by: userId,
                         estimate_id: estimateData.estimate_id,
                         work_name: estimateData.work_name,
                         work_category: estimateData.work_category,
@@ -109,7 +109,7 @@ module.exports = (supabase) => {
             let query = supabase
                 .from('estimates')
                 .select('id, estimate_id, work_name, work_category, grand_total, created_at', { count: 'exact' })
-                .eq('user_id', userId)
+                .eq('created_by', userId)
                 .order('created_at', { ascending: false })
                 .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
 

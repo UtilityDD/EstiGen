@@ -3,8 +3,8 @@ const path = require('path');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const { body, param, validationResult } = require('express-validator');
-const { mergeUserData, cloneForUser, resetToDefault, forkStructure } = require('./multi-user-helpers');
-const { supabase } = require('./supabase-config');
+const { mergeUserData, cloneForUser, resetToDefault, forkStructure } = require('../multi-user-helpers');
+const { supabase } = require('../supabase-config');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -138,7 +138,7 @@ app.use('/api', apiLimiter);
 // --- API Routes ---
 
 // Import and use estimates routes
-const estimatesRoutes = require('./routes/estimates');
+const estimatesRoutes = require('../routes/estimates');
 app.use('/api/estimates', estimatesRoutes(supabase));
 
 // --- Supabase Database Functions ---
