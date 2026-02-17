@@ -10,20 +10,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.currentUser = user;
 
     // 2. Initialize User UI
-    if (window.currentUser) {
-        const user = window.currentUser;
-        document.getElementById('user-name').textContent = user.user_metadata?.full_name || user.email.split('@')[0];
-        document.getElementById('user-email').textContent = user.email;
-        document.getElementById('user-initials').textContent = (user.user_metadata?.full_name || user.email)[0].toUpperCase();
+    const initUser = async () => {
+        const user = window.currentUser || await getCurrentUser();
+        if (user) {
+            window.currentUser = user;
+            document.getElementById('user-name').textContent = user.user_metadata?.full_name || user.email.split('@')[0];
+            document.getElementById('user-email').textContent = user.email;
+            document.getElementById('user-initials').textContent = (user.user_metadata?.full_name || user.email)[0].toUpperCase();
 
-        // Fetch profile to check role for admin link
-        getUserProfile(user.id).then(profile => {
-            if (profile && profile.role === 'admin') {
-                const adminLink = document.getElementById('admin-dropdown-link');
-                if (adminLink) adminLink.classList.remove('hidden');
-            }
-        });
-    }
+            // Fetch profile to check role for admin link
+            getUserProfile(user.id).then(profile => {
+                if (profile && profile.role === 'admin') {
+                    const adminLink = document.getElementById('admin-dropdown-link');
+                    if (adminLink) adminLink.classList.remove('hidden');
+                }
+            });
+        }
+    };
+    initUser();
 
     // 3. Add dropdown click handler
     document.addEventListener('click', (e) => {
