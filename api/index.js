@@ -55,7 +55,8 @@ app.use(helmet({
             connectSrc: [
                 "'self'",
                 process.env.SUPABASE_URL || "https://*.supabase.co", // Allow Supabase API calls
-                "https://cdnjs.cloudflare.com" // Allow fetching source maps
+                "https://cdnjs.cloudflare.com", // Allow fetching source maps
+                "https://cdn.jsdelivr.net" // Allow jsdelivr connection
             ],
             fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
             objectSrc: ["'none'"],
@@ -146,7 +147,8 @@ app.use('/api/estimates', estimatesRoutes(supabase));
 // API endpoint to GET the current structure data from Supabase (as JSON)
 app.get('/api/structures', async (req, res) => {
     try {
-        const userId = req.query.userId || null;
+        let userId = req.query.userId;
+        if (!userId || userId === 'null' || userId === 'undefined') userId = null;
 
         // Merge default + custom data for user
         const [structures, specialStructures] = await Promise.all([

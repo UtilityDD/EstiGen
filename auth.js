@@ -1,7 +1,7 @@
 
 // Wrapper for Supabase Auth
 
-let supabaseClient = null;
+var supabaseClient = null;
 
 // Initialize Supabase
 async function initSupabase() {

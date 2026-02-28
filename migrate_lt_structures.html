@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LT Structure Migration Tool</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 2rem;
+            background: #f0f2f5;
+            line-height: 1.6;
+        }
+
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h2 {
+            color: #1a73e8;
+            margin-top: 0;
+        }
+
+        .status {
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-weight: 500;
+        }
+
+        .pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        button {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #1557b0;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        pre {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h2>⚡ LT Structure Migration</h2>
+        <p>This tool will update the LT Network structures in your database with the consolidated BOM data (REC/WBSEDCL
+            standards).</p>
+
+        <div id="status-box" class="status pending">Waiting for authorization...</div>
+
+        <div id="details">
+            <p><strong>Structures to Sync:</strong></p>
+            <ul>
+                <li>S-LT-4W-BARE (Tangent)</li>
+                <li>S-LT-4W-ANGLE (Angle)</li>
+                <li>S-LT-4W-DE (Dead End)</li>
+                <li>S-LT-TAN-ABC-3P (ABC Tangent)</li>
+                <li>S-LT-DE-ABC-3P (ABC Dead End)</li>
+            </ul>
+        </div>
+
+        <button id="run-btn" disabled>Sync to Database</button>
+
+        <div id="log-container" style="margin-top: 1.5rem; display: none;">
+            <strong>Activity Log:</strong>
+            <pre id="log-content"></pre>
+        </div>
+    </div>
+
+    <script>
+        const structures = [
+            {
+                id: 'S-LT-4W-BARE',
+                name: 'LT 3-Ph 4-Wire Bare Tangent Pole',
+                voltage: ['LT 3-Ph'],
+                description: 'Standard intermediate pole for Bare Conductor (REC/WBSEDCL)',
+                materials: [{ index: 1, qty: 1 }, { index: 214, qty: 4 }, { index: 215, qty: 4 }, { index: 227, qty: 4 }, { index: 221, qty: 4 }],
+                labour: [{ index: 7, qty: 1 }, { index: 42, qty: 4 }]
+            },
+            {
+                id: 'S-LT-4W-ANGLE',
+                name: 'LT 3-Ph 4-Wire Bare Angle Pole',
+                voltage: ['LT 3-Ph'],
+                description: 'Angle pole (0-30 deg) for Bare Conductor with stay',
+                materials: [{ index: 1, qty: 1 }, { index: 214, qty: 4 }, { index: 215, qty: 4 }, { index: 227, qty: 4 }, { index: 221, qty: 4 }, { index: 18, qty: 1 }],
+                labour: [{ index: 7, qty: 1 }, { index: 42, qty: 4 }, { index: 18, qty: 1 }]
+            },
+            {
+                id: 'S-LT-4W-DE',
+                name: 'LT 3-Ph Dead End (Bare)',
+                voltage: ['LT 3-Ph'],
+                description: 'Termination pole with cross-arms for Bare Conductor',
+                materials: [{ index: 1, qty: 1 }, { index: 10, qty: 1 }, { index: 216, qty: 1 }, { index: 227, qty: 4 }, { index: 213, qty: 4 }, { index: 18, qty: 1 }],
+                labour: [{ index: 7, qty: 1 }, { index: 40, qty: 1 }, { index: 42, qty: 4 }, { index: 18, qty: 1 }]
+            },
+            {
+                id: 'S-LT-TAN-ABC-3P',
+                name: 'LT 3-Ph Tangent Pole (AB Cable)',
+                voltage: ['LT 3-Ph'],
+                description: 'Intermediate suspension pole for 3-Ph AB Cable',
+                materials: [{ index: 1, qty: 1 }, { index: 292, qty: 1 }, { index: 296, qty: 1 }],
+                labour: [{ index: 7, qty: 1 }, { index: 56, qty: 1 }]
+            },
+            {
+                id: 'S-LT-DE-ABC-3P',
+                name: 'LT 3-Ph Dead End Pole (AB Cable)',
+                voltage: ['LT 3-Ph'],
+                description: 'Termination pole for 3-Ph AB Cable with stay',
+                materials: [{ index: 1, qty: 1 }, { index: 295, qty: 1 }, { index: 296, qty: 1 }, { index: 18, qty: 1 }],
+                labour: [{ index: 7, qty: 1 }, { index: 55, qty: 1 }, { index: 18, qty: 1 }]
+            }
+        ];
+
+        const runBtn = document.getElementById('run-btn');
+        const statusBox = document.getElementById('status-box');
+        const logContent = document.getElementById('log-content');
+        const logContainer = document.getElementById('log-container');
+
+        async function init() {
+            try {
+                const user = await checkAuth();
+                if (user) {
+                    const profile = await getUserProfile(user.id);
+                    if (profile && profile.role === 'admin') {
+                        statusBox.className = 'status success';
+                        statusBox.innerText = '✅ Authorized as Administrator';
+                        runBtn.disabled = false;
+                    } else {
+                        statusBox.className = 'status error';
+                        statusBox.innerText = '❌ Access Denied: Admin role required';
+                    }
+                }
+            } catch (e) {
+                statusBox.className = 'status error';
+                statusBox.innerText = '❌ Error initializing: ' + e.message;
+            }
+        }
+
+        runBtn.addEventListener('click', async () => {
+            runBtn.disabled = true;
+            logContainer.style.display = 'block';
+            logContent.innerText = 'Starting migration...\n';
+
+            const client = await initSupabase();
+            const user = await getCurrentUser();
+            if (!user) {
+                logContent.innerText += '❌ Error: User session lost. Please refresh.\n';
+                return;
+            }
+
+            let successCount = 0;
+
+            for (const s of structures) {
+                logContent.innerText += `Syncing ${s.id}... `;
+                try {
+                    // 1. Check for existing record to get its record_id and user_id
+                    const { data: existing } = await client
+                        .from('structures')
+                        .select('record_id, user_id')
+                        .eq('id', s.id)
+                        .maybeSingle();
+
+                    const syncData = { ...s };
+
+                    if (existing) {
+                        syncData.record_id = existing.record_id;
+                        // Keep current owner if it exists, otherwise assign to current admin
+                        syncData.user_id = existing.user_id || user.id;
+                    } else {
+                        // New record: assign to current admin
+                        syncData.user_id = user.id;
+                    }
+
+                    const { error } = await client.from('structures').upsert(syncData);
+
+                    if (error) throw error;
+                    logContent.innerText += '✅ Done\n';
+                    successCount++;
+                } catch (e) {
+                    logContent.innerText += `❌ Error: ${e.message}\n`;
+                    console.error('Failed to sync ' + s.id, e);
+                }
+            }
+
+            logContent.innerText += `\n🏁 Migration Finished: ${successCount}/${structures.length} successfully updated.`;
+            statusBox.innerText = `Migration Complete (${successCount}/${structures.length})`;
+        });
+
+        init();
+    </script>
+</body>
+
+</html>

@@ -38,7 +38,10 @@ async function mergeUserData(supabase, tableName, userId) {
         .is('user_id', null);
 
     if (customIds.length > 0) {
-        defaultQuery = defaultQuery.not('id', 'in', `(${customIds.join(',')})`);
+        // PostgREST "not.in" expects a parenthesized list: (id1,id2,id3)
+        // Note: No quotes are needed for simple string IDs in PostgREST parenthesized lists
+        const idList = `(${customIds.join(',')})`;
+        defaultQuery = defaultQuery.filter('id', 'not.in', idList);
     }
 
     const { data: defaultData, error: defaultError } = await defaultQuery;

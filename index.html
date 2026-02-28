@@ -115,14 +115,40 @@
 
         <!-- Step 3: Structure Types -->
         <div id="step-3" class="step">
-            <h2 class="step-title">Step 3: Enter Structure Quantities</h2>
+            <h2 class="step-title">Step 3: Technical Setup & Quantities</h2>
 
-            <!-- Quick Filter / Search -->
-            <div class="search-container">
-                <div class="search-box">
-                    <span class="search-icon">🔍</span>
-                    <input type="text" id="structure-search" placeholder="Search structures by name or code..."
-                        oninput="filterStructures(this.value)">
+            <!-- Global Configuration for this Estimate -->
+            <div class="setup-bar"
+                style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; border: 1px solid #e9ecef;">
+                <h4 style="margin-top: 0; margin-bottom: 1rem; color: #1a73e8; display: flex; align-items: center;">⚙️
+                    Project Physical Config</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="font-size: 0.85rem; color: #5f6368;">🏗️ Select Pole Type</label>
+                        <select id="select-pole-type" onchange="applyStructureFilters()"
+                            style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1.5px solid #dadce0;">
+                            <option value="8m PCC">8m PCC</option>
+                            <option value="9m PCC">9m PCC</option>
+                            <option value="Steel Tubular">Steel Tubular</option>
+                            <option value="Rail Pole">Rail Pole</option>
+                            <option value="H-Beam">H-Beam</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="font-size: 0.85rem; color: #5f6368;">🌍 Select Terrain</label>
+                        <select id="select-terrain-type" onchange="applyStructureFilters()"
+                            style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1.5px solid #dadce0;">
+                            <option value="Plain">Plain</option>
+                            <option value="Hilly">Hilly</option>
+                            <option value="Marshy">Marshy</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="font-size: 0.85rem; color: #5f6368;">🔍 Quick Search</label>
+                        <input type="text" id="structure-search" placeholder="Search by name..."
+                            oninput="filterStructures(this.value)"
+                            style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1.5px solid #dadce0;">
+                    </div>
                 </div>
             </div>
 

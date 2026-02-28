@@ -15,36 +15,68 @@ const tableConfigs = {
         title: 'Structures',
         apiEndpoint: '/api/structures',
         columns: [
-            { key: 'id', label: 'ID', width: '15%', sortable: true },
-            { key: 'name', label: 'Name', width: '30%', sortable: true },
-            { key: 'voltage', label: 'Voltage', width: '20%', render: renderVoltage },
-            { key: 'description', label: 'Description', width: '35%', truncate: true }
+            { key: 'id', label: 'ID', width: '10%', sortable: true },
+            { key: 'name', label: 'Name', width: '25%', sortable: true },
+            { key: 'voltage', label: 'Voltage', width: '15%', render: renderVoltage },
+            { key: 'pole_type', label: 'Pole', width: '15%' },
+            { key: 'terrain_type', label: 'Terrain', width: '10%' },
+            { key: 'description', label: 'Description', width: '25%', truncate: true }
         ],
         formFields: [
             { key: 'id', label: 'ID', type: 'text', required: true, hint: 'Unique identifier (no spaces)' },
             { key: 'name', label: 'Name', type: 'text', required: true },
             { key: 'description', label: 'Description', type: 'text' },
             { key: 'voltage', label: 'Voltage', type: 'text', hint: 'e.g., 33 kV, 11 kV, etc.' },
-            { key: 'materials', label: 'Materials (JSON)', type: 'textarea', hint: 'Format: index:qty pairs separated by semicolons' },
-            { key: 'labour', label: 'Labour (JSON)', type: 'textarea', hint: 'Format: index:qty pairs separated by semicolons' }
+            {
+                key: 'pole_type', label: 'Pole Type', type: 'select', options: [
+                    { value: '8m PCC', label: '8m PCC' },
+                    { value: '9m PCC', label: '9m PCC' },
+                    { value: 'Steel Tubular', label: 'Steel Tubular' },
+                    { value: 'Rail Pole', label: 'Rail Pole' },
+                    { value: 'H-Beam', label: 'H-Beam' }
+                ]
+            },
+            {
+                key: 'terrain_type', label: 'Terrain Type', type: 'select', options: [
+                    { value: 'Plain', label: 'Plain' },
+                    { value: 'Hilly', label: 'Hilly' },
+                    { value: 'Marshy', label: 'Marshy' }
+                ]
+            }
         ]
     },
     special_structures: {
         title: 'Special Structures',
         apiEndpoint: '/api/structures',
         columns: [
-            { key: 'id', label: 'ID', width: '15%', sortable: true },
-            { key: 'name', label: 'Name', width: '30%', sortable: true },
-            { key: 'description', label: 'Description', width: '35%', truncate: true },
-            { key: 'voltage', label: 'Type', width: '20%', render: () => 'Special' }
+            { key: 'id', label: 'ID', width: '10%', sortable: true },
+            { key: 'name', label: 'Name', width: '25%', sortable: true },
+            { key: 'description', label: 'Description', width: '25%', truncate: true },
+            { key: 'pole_type', label: 'Pole', width: '15%' },
+            { key: 'terrain_type', label: 'Terrain', width: '10%' },
+            { key: 'voltage', label: 'Type', width: '15%', render: () => 'Special' }
         ],
         formFields: [
             { key: 'id', label: 'ID', type: 'text', required: true, hint: 'Unique identifier (no spaces)' },
             { key: 'name', label: 'Name', type: 'text', required: true },
             { key: 'description', label: 'Description', type: 'text' },
             { key: 'voltage', label: 'Type', type: 'text', value: 'Special Structure', readonly: true, hidden: true },
-            { key: 'materials', label: 'Materials (JSON)', type: 'textarea', hint: 'Format: index:qty pairs separated by semicolons' },
-            { key: 'labour', label: 'Labour (JSON)', type: 'textarea', hint: 'Format: index:qty pairs separated by semicolons' }
+            {
+                key: 'pole_type', label: 'Pole Type', type: 'select', options: [
+                    { value: '8m PCC', label: '8m PCC' },
+                    { value: '9m PCC', label: '9m PCC' },
+                    { value: 'Steel Tubular', label: 'Steel Tubular' },
+                    { value: 'Rail Pole', label: 'Rail Pole' },
+                    { value: 'H-Beam', label: 'H-Beam' }
+                ]
+            },
+            {
+                key: 'terrain_type', label: 'Terrain Type', type: 'select', options: [
+                    { value: 'Plain', label: 'Plain' },
+                    { value: 'Hilly', label: 'Hilly' },
+                    { value: 'Marshy', label: 'Marshy' }
+                ]
+            }
         ]
     },
     materials: {
@@ -522,6 +554,26 @@ function renderStructureEditor(container, data, isSpecial) {
                 <label>⚡ Voltage Level</label>
                 <input type="text" name="voltage" value="${voltage}" ${isSpecial ? 'readonly' : ''} placeholder="e.g. 33 kV">
             </div>
+            <div class="form-field">
+                <label>🏗️ Pole Type</label>
+                <select name="pole_type" ${data ? 'disabled' : ''}>
+                    <option value="8m PCC" ${data?.pole_type === '8m PCC' ? 'selected' : ''}>8m PCC</option>
+                    <option value="9m PCC" ${data?.pole_type === '9m PCC' ? 'selected' : ''}>9m PCC</option>
+                    <option value="Steel Tubular" ${data?.pole_type === 'Steel Tubular' ? 'selected' : ''}>Steel Tubular</option>
+                    <option value="Rail Pole" ${data?.pole_type === 'Rail Pole' ? 'selected' : ''}>Rail Pole</option>
+                    <option value="H-Beam" ${data?.pole_type === 'H-Beam' ? 'selected' : ''}>H-Beam</option>
+                </select>
+                ${data ? `<input type="hidden" name="pole_type" value="${data.pole_type}">` : ''}
+            </div>
+            <div class="form-field">
+                <label>🌍 Terrain Type</label>
+                <select name="terrain_type" ${data ? 'disabled' : ''}>
+                    <option value="Plain" ${data?.terrain_type === 'Plain' ? 'selected' : ''}>Plain</option>
+                    <option value="Hilly" ${data?.terrain_type === 'Hilly' ? 'selected' : ''}>Hilly</option>
+                    <option value="Marshy" ${data?.terrain_type === 'Marshy' ? 'selected' : ''}>Marshy</option>
+                </select>
+                ${data ? `<input type="hidden" name="terrain_type" value="${data.terrain_type}">` : ''}
+            </div>
             <div class="form-field full-width">
                 <label>📝 Detailed Description</label>
                 <input type="text" name="description" value="${description}" placeholder="Additional details about this structure">
@@ -578,6 +630,10 @@ function renderStructureEditor(container, data, isSpecial) {
 function addMaterialRow(item = null) {
     const tbody = document.querySelector('#admin-mat-table tbody');
     const tr = document.createElement('tr');
+
+    let inputValue = '';
+    let qty = item ? (item.qty || 0) : 1;
+    let idx = item ? (item.index || item.id) : '';
 
     let code = '';
     let step = "0.01";
@@ -732,6 +788,11 @@ async function saveRecord() {
         data.materials = materials.map(m => `${m.index}:${m.qty}`).join(';');
         data.labour = labour.map(l => `${l.index}:${l.qty}`).join(';');
 
+        // Ensure voltage is an array for regular structures (Supabase requirement)
+        if (currentTable === 'structures' && data.voltage && typeof data.voltage === 'string') {
+            data.voltage = data.voltage.split(',').map(v => v.trim()).filter(v => v);
+        }
+
         // IMPORTANT: Include record_id and user_id for updates
         const editId = document.getElementById('edit-modal').dataset.editId;
         if (editId) {
@@ -753,18 +814,21 @@ async function saveRecord() {
         let response;
         const editId = document.getElementById('edit-modal').dataset.editId;
 
-        // Custom handling for profiles to ensure we use session permissions
-        if (currentTable === 'profiles') {
+        // Custom handling for profiles and structures to ensure we use session permissions
+        if (currentTable === 'profiles' || currentTable === 'structures' || currentTable === 'special_structures') {
             const client = await initSupabase();
-            const { data: updatedProfile, error } = await client
-                .from('profiles')
-                .update(data)
-                .eq('id', editId)
-                .select()
-                .single();
+            const table = currentTable === 'profiles' ? 'profiles' : currentTable;
 
+            let query;
+            if (editId) {
+                // All these tables use 'id' as primary key ID
+                query = client.from(table).update(data).eq('id', editId);
+            } else {
+                query = client.from(table).insert([data]);
+            }
+
+            const { error } = await query.select();
             if (error) throw error;
-            // Mock a response object for the existing logic flow
             response = { ok: true };
         } else {
             let endpoint = config.apiEndpoint;

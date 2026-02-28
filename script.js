@@ -148,6 +148,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 name: s.name || '',
                 description: s.description || '',
                 voltage: voltage, // Use the parsed array
+                pole_type: s.pole_type || '8m PCC',
+                terrain_type: s.terrain_type || 'Plain',
                 materials: materials,
                 labour: labour
             };
@@ -340,6 +342,10 @@ function filterStructures(query) {
     renderStructureList(query);
 }
 
+function applyStructureFilters() {
+    renderStructureList(document.getElementById('structure-search').value);
+}
+
 function renderStructureList(searchTerm = '') {
     const tabsContainer = document.getElementById('structure-tabs-container');
     const query = searchTerm.toLowerCase().trim();
@@ -359,14 +365,25 @@ function renderStructureList(searchTerm = '') {
         // --- END DEBUGGING LOG ---
 
         try {
+            const selectedPole = document.getElementById('select-pole-type')?.value || '8m PCC';
+            const selectedTerrain = document.getElementById('select-terrain-type')?.value || 'Plain';
+
             const relevantStructures = structureLibrary.filter(s => {
                 if (!s || !Array.isArray(s.voltage)) return false;
 
-                // Filter by voltage level
+                // 1. Filter by voltage level
                 const matchesVoltage = s.voltage.some(v => estimate.voltageLevels.includes(v));
                 if (!matchesVoltage) return false;
 
-                // Filter by search term if provided
+                // 2. Filter by Pole and Terrain (if applicable)
+                // For "Special Structures", we might not want to enforce these filters strictly
+                const isSpecial = s.voltage.includes('Special Structure');
+                if (!isSpecial) {
+                    if (s.pole_type !== selectedPole) return false;
+                    if (s.terrain_type !== selectedTerrain) return false;
+                }
+
+                // 3. Filter by search term if provided
                 if (query) {
                     return s.name.toLowerCase().includes(query) ||
                         String(s.id).toLowerCase().includes(query);
