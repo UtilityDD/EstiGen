@@ -38,10 +38,9 @@ async function mergeUserData(supabase, tableName, userId) {
         .is('user_id', null);
 
     if (customIds.length > 0) {
-        // PostgREST "not.in" expects a parenthesized list: (id1,id2,id3)
-        // Note: No quotes are needed for simple string IDs in PostgREST parenthesized lists
-        const idList = `(${customIds.join(',')})`;
-        defaultQuery = defaultQuery.filter('id', 'not.in', idList);
+        // IDs are strings (e.g. 'LT-BARE'); use standard Supabase 'in' filter with array.
+        // The Supabase JS client handles the underlying PostgREST syntax automatically.
+        defaultQuery = defaultQuery.not('id', 'in', customIds);
     }
 
     const { data: defaultData, error: defaultError } = await defaultQuery;
